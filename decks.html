@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Slide Decks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', -apple-system, sans-serif;
+      background: #1a1a24;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .container {
+      width: 100%;
+      max-width: 700px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    .header span {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .deck-card {
+      background: #1c1c24;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+    }
+    .deck-card:hover {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+    .deck-card .thumb {
+      width: 64px;
+      height: 44px;
+      border-radius: 0.4rem;
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(255,255,255,0.04);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+    .deck-card .info {
+      flex: 1;
+      min-width: 0;
+    }
+    .deck-card .name {
+      color: #e2e8f0;
+      font-size: 1rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-card .count {
+      color: #6b7280;
+      font-size: 0.75rem;
+      margin-top: 0.15rem;
+    }
+    .deck-card .arrow {
+      color: #6b7280;
+      font-size: 1.25rem;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .deck-card:hover .arrow {
+      color: #a5b4fc;
+    }
+    .new-deck {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .new-deck input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.7rem 1rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .new-deck input:focus {
+      border-color: #6366f1;
+    }
+    .new-deck button {
+      background: #6366f1;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.7rem 1.25rem;
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .new-deck button:hover { opacity: 0.85; }
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    .error {
+      display: none;
+      text-align: center;
+      padding: 0.5rem;
+      color: #ef4444;
+      font-size: 0.85rem;
+    }
+    .error.show { display: block; }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-card {
+      height: 68px;
+      border-radius: 0.75rem;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Slide Decks</h1>
+      <span id="deckCount">0</span>
+    </div>
+    <div class="list" id="deckList">
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
+    <div class="empty" id="emptyMsg" style="display:none;">No decks yet. Create one below.</div>
+    <div class="error" id="errorMsg">Failed to load decks.</div>
+    <div class="new-deck">
+      <input type="text" id="newDeckInput" placeholder="New deck name..." spellcheck="false" maxlength="100">
+      <button id="createBtn">Create & Open</button>
+    </div>
+  </div>
+  <script>
+    const SERVER = window.location.origin;
+    const list = document.getElementById('deckList');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const errorMsg = document.getElementById('errorMsg');
+    const deckCount = document.getElementById('deckCount');
+    const newInput = document.getElementById('newDeckInput');
+    const createBtn = document.getElementById('createBtn');
+
+    function resolveUrl(path) {
+      if (!path) return '';
+      if (path.match(/^https?:\/\//)) return path;
+      if (path.startsWith('/api/')) return SERVER + path;
+      return SERVER + '/' + path.replace(/^\//, '');
+    }
+
+    async function loadDecks() {
+      list.innerHTML = '';
+      errorMsg.classList.remove('show');
+      try {
+        const resp = await fetch(SERVER + '/api/decks');
+        const data = await resp.json();
+        const decks = data.decks || [];
+        deckCount.textContent = decks.length;
+        if (decks.length === 0) {
+          emptyMsg.style.display = '';
+          return;
+        }
+        emptyMsg.style.display = 'none';
+        decks.forEach(d => {
+          const a = document.createElement('a');
+          a.className = 'deck-card';
+          a.href = 'slideshow.html?deck=' + encodeURIComponent(d.name);
+          const thumbUrl = d.firstImage ? resolveUrl(d.firstImage) : '';
+          const thumbHtml = thumbUrl
+            ? 'background-image:url(\"' + thumbUrl.replace(/"/g, '\\"') + '\")'
+            : '';
+          a.innerHTML =
+            '<div class="thumb" style="' + thumbHtml + '">' + (thumbUrl ? '' : '&#x1F5BC;') + '</div>' +
+            '<div class="info"><div class="name">' + d.name.replace(/</g, '&lt;') + '</div><div class="count">' + d.count + ' slide' + (d.count !== 1 ? 's' : '') + '</div></div>' +
+            '<span class="arrow">&rarr;</span>';
+          list.appendChild(a);
+        });
+      } catch (_) {
+        list.innerHTML = '';
+        errorMsg.classList.add('show');
+      }
+    }
+
+    createBtn.addEventListener('click', () => {
+      const name = newInput.value.trim();
+      if (!name) return;
+      window.location.href = 'slideshow.html?deck=' + encodeURIComponent(name);
+    });
+
+    newInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createBtn.click();
+    });
+
+    loadDecks();
+  </script>
+</body>
+</html>

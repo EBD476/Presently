@@ -1,0 +1,2602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Vazirmatn:wght@400;500;600;700&family=Lalezar&family=Markazi+Text:wght@400;500;600;700&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"> 
+  <title>Slide Show</title>
+  <style>
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 0.5rem;
+    }
+
+    .skeleton-thumb {
+      height: 60px;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+    }
+
+    .skeleton-thumb-box {
+      width: 72px;
+      min-width: 72px;
+      height: 48px;
+      border-radius: 0.375rem;
+      background: inherit;
+    }
+
+    .skeleton-thumb-line {
+      flex: 1;
+      height: 12px;
+      border-radius: 0.25rem;
+      background: inherit;
+    }
+
+    .skeleton-thumb-line.short {
+      width: 60%;
+    }
+
+    .skeleton-slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .skeleton-slide-box {
+      width: 60%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .skeleton-slide-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-slide-line {
+      height: 14px;
+      border-radius: 0.25rem;
+      margin: 0 auto 0.75rem;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-slide-line:nth-child(2) { width: 70%; }
+    .skeleton-slide-line:nth-child(3) { width: 45%; }
+
+    .skeleton-hidden {
+      display: none !important;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      /* font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; */
+      font-family: 'poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+      background: #e8e8ee;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: #1c1c24;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      z-index: 300;
+      transition: margin-left 0.3s ease;
+    }
+
+    .sidebar.collapsed {
+      margin-left: -240px;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 1rem 1rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar-header h3 {
+      color: #a0a0b8;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+
+    .sidebar-header span {
+      color: #5a5a72;
+      font-size: 0.75rem;
+    }
+
+    .deck-row input:focus,
+    .deck-row select:focus {
+      border-color: #6366f1 !important;
+    }
+
+    .deck-row select option {
+      background: #1c1c24;
+      color: #e2e8f0;
+    }
+
+    .sidebar-close {
+      background: none;
+      border: none;
+      color: #5a5a72;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      display: none;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar-close:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0e0f0;
+    }
+
+    .sidebar-thumbnails {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-thumbnails::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-thumbnails::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-thumbnails::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+    }
+
+    .sidebar-add-btn {
+      flex-shrink: 0;
+      margin: 0.5rem 0.75rem 0.75rem;
+      padding: 0.55rem;
+      border-radius: 0.5rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      color: #6b7280;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      font-family: inherit;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .sidebar-add-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #a0a0b8;
+    }
+
+    .thumb-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      cursor: grab;
+      transition: background 0.2s, transform 0.15s;
+      border: 2px solid transparent;
+      user-select: none;
+    }
+
+    .thumb-item:active {
+      cursor: grabbing;
+    }
+
+    .thumb-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .thumb-item.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: #6366f1;
+    }
+
+    .thumb-item.dragging {
+      opacity: 0.3;
+    }
+
+    .thumb-del-btn {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #2a2a36;
+      color: #a0a0b8;
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      z-index: 2;
+      font-family: inherit;
+    }
+
+    .thumb-del-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+
+    .thumb-item:hover .thumb-del-btn {
+      display: flex;
+    }
+
+    .thumb-dup-btn {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #2a2a36;
+      color: #a0a0b8;
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      z-index: 2;
+      font-family: inherit;
+    }
+
+    .thumb-dup-btn:hover {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+
+    .thumb-item:hover .thumb-dup-btn {
+      display: flex;
+    }
+
+    .thumb-rename-input {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid #6366f1;
+      border-radius: 0.25rem;
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      padding: 0.1rem 0.3rem;
+      width: 100%;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .confirm-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .confirm-box {
+      background: #1a1a24;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      max-width: 340px;
+      width: 90%;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .confirm-box p {
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      margin: 0 0 1.25rem;
+      line-height: 1.5;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .confirm-actions button {
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+    }
+
+    .confirm-actions .btn-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      color: #a0a0b8;
+    }
+
+    .confirm-actions .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .confirm-actions .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+
+    .confirm-actions .btn-danger:hover {
+      opacity: 0.9;
+    }
+
+    .ctx-menu {
+      position: fixed;
+      z-index: 700;
+      background: #1c1c24;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.6rem;
+      padding: 0.3rem 0;
+      min-width: 160px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      display: none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .ctx-menu.show {
+      display: block;
+    }
+
+    .ctx-item {
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      color: #c0c0d0;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .ctx-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+    }
+
+    .ctx-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.06);
+      margin: 0.25rem 0;
+    }
+
+    .ctx-submenu {
+      display: none;
+      padding-left: 0.5rem;
+    }
+
+    .ctx-submenu.show {
+      display: block;
+    }
+
+    .drop-placeholder {
+      height: 4px;
+      margin: 2px 0;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #6366f1, #a855f7);
+      opacity: 0.7;
+      transition: height 0.1s;
+      flex-shrink: 0;
+    }
+
+    .thumb-preview {
+      width: 72px;
+      min-width: 72px;
+      height: 48px;
+      border-radius: 0.375rem;
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(255, 255, 255, 0.04);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .thumb-preview .thumb-placeholder {
+      font-size: 1rem;
+      opacity: 0.2;
+      color: #fff;
+    }
+
+    .thumb-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      min-width: 0;
+    }
+
+    .thumb-info .thumb-label {
+      font-size: 0.8rem;
+      color: #d0d0e0;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .thumb-info .thumb-desc {
+      font-size: 0.7rem;
+      color: #5a5a72;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .main-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-width: 0;
+    }
+
+    .slideshow-container {
+      position: relative;
+      width: 95%;
+      max-width: 1400px;
+      height: 92vh;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .slide-stage {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: scale(0.95);
+      pointer-events: none;
+      overflow: hidden;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+
+    .slide.exit-prev {
+      opacity: 0;
+      transform: translateX(-40px) scale(0.95);
+    }
+
+    .slide.exit-next {
+      opacity: 0;
+      transform: translateX(40px) scale(0.95);
+    }
+
+    .slide.drag-over {
+      outline: 3px dashed #818cf8;
+      outline-offset: -12px;
+    }
+
+    .slide-img-wrap {
+      position: absolute;
+      cursor: move;
+      z-index: 5;
+      display: none;
+      pointer-events: none;
+    }
+
+    .slide.active .slide-img-wrap {
+      pointer-events: auto;
+    }
+
+    .slide-img-wrap.selected {
+      outline: 2px solid #6366f1;
+      outline-offset: 0px;
+    }
+
+    .slide-img-wrap img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border: 2px solid #6366f1;
+      border-radius: 2px;
+      z-index: 10;
+      pointer-events: auto;
+      display: none;
+    }
+
+    .slide-img-wrap.selected .resize-handle {
+      display: block;
+    }
+
+    .fullscreen .slide-img-wrap.selected {
+      outline: none;
+    }
+
+    .fullscreen .slide-img-wrap.selected .resize-handle {
+      display: none !important;
+    }
+
+    .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+    .resize-handle.n  { top: -6px; left: calc(50% - 6px); cursor: n-resize; }
+    .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+    .resize-handle.e  { top: calc(50% - 6px); right: -6px; cursor: e-resize; }
+    .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+    .resize-handle.s  { bottom: -6px; left: calc(50% - 6px); cursor: s-resize; }
+    .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+    .resize-handle.w  { top: calc(50% - 6px); left: -6px; cursor: w-resize; }
+
+    .img-props {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      z-index: 25;
+      display: none;
+      gap: 0.25rem;
+      background: rgba(28, 28, 36, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.5rem;
+      padding: 0.3rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .slide-img-wrap.selected ~ .img-props,
+    .slide-img-wrap.selected + .img-props {
+      display: flex;
+    }
+
+    .img-props button {
+      background: transparent;
+      border: none;
+      color: #6b7280;
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.3rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .img-props button:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #c0c0d8;
+    }
+
+    .img-props button.active {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+    }
+
+    .slide-url-bar {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      display: none;
+      gap: 0.25rem;
+      background: rgba(28, 28, 36, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.5rem;
+      padding: 0.4rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      min-width: 320px;
+    }
+
+    .slide-url-bar.show {
+      display: flex;
+    }
+
+    .slide-url-bar input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.35rem;
+      padding: 0.4rem 0.6rem;
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      outline: none;
+      font-family: inherit;
+      min-width: 0;
+    }
+
+    .slide-url-bar input:focus {
+      border-color: #6366f1;
+    }
+
+    .slide-url-bar button {
+      background: #6366f1;
+      border: none;
+      border-radius: 0.35rem;
+      padding: 0.4rem 0.75rem;
+      color: #fff;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: opacity 0.15s;
+    }
+
+    .slide-url-bar button:hover {
+      opacity: 0.85;
+    }
+
+    .fullscreen .img-props {
+      display: none !important;
+    }
+
+    .slide .slide-label {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.875rem;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 0.3rem 1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      letter-spacing: 0.02em;
+      z-index: 20;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .slide .slide-number {
+      position: absolute;
+      bottom: 2rem;
+      right: 2.5rem;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.35);
+      font-variant-numeric: tabular-nums;
+      z-index: 20;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #c0c0d8;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .nav-arrow:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .nav-arrow.prev { left: 1.5rem; }
+    .nav-arrow.next { right: 1.5rem; }
+
+    .nav-arrow:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+      transition: width 0.4s ease;
+      z-index: 200;
+    }
+
+    .dots {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      z-index: 150;
+    }
+
+    .dots .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+
+    .dots .dot.active {
+      background: #818cf8;
+      transform: scale(1.4);
+    }
+
+    .dots .dot:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .settings-btn {
+      position: absolute;
+      top: 1.25rem;
+      right: 1.25rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a0a0b8;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+      z-index: 200;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      top: 4rem;
+      right: 1.25rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #a0a0b8;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+      z-index: 200;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .fallback-msg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.15);
+      font-size: 0.9rem;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .fallback-msg .fallback-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .fallback-msg .fallback-box .fb-num {
+      font-size: 3rem;
+      color: #d4d4d7;
+      line-height: 1.1;
+      font-weight: 500;
+    }
+
+    .fallback-msg .fallback-box .fb-label {
+      font-size: 0.85rem;
+      color: #d4d4d7;
+      text-align: center;
+      line-height: 1.5;
+      max-width: 240px;
+    }
+
+    .sidebar-toggle {
+      position: fixed;
+      top: 0.75rem;
+      left: calc(240px - 18px);
+      z-index: 400;
+      background: rgba(28, 28, 36, 0.9);
+      border: 1px solid rgba(28, 28, 36, 0.9);
+      color: #c0c0d0;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: left 0.3s ease, background 0.2s;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sidebar-toggle:hover {
+      background: rgba(28, 28, 36, 1);
+      color: #fff;
+    }
+
+    .sidebar.collapsed ~ .sidebar-toggle {
+      left: -1rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: #1a1a24;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1.25rem;
+      width: 90%;
+      max-width: 560px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .modal-header h2 {
+      color: #f1f5f9;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.25rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover { color: #f1f5f9; }
+
+    .modal-body {
+      padding: 1rem 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-body::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .modal-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+    }
+
+    .slide-setting {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .slide-setting:last-child {
+      border-bottom: none;
+    }
+
+    .slide-setting label {
+      display: block;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .slide-setting input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .slide-setting input:focus {
+      border-color: #6366f1;
+    }
+
+    .slide-setting input::placeholder {
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    .slide-setting .preview-thumb {
+      width: 100%;
+      height: 80px;
+      border-radius: 0.5rem;
+      margin-top: 0.5rem;
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(255, 255, 255, 0.03);
+      display: none;
+    }
+
+    .slide-setting .preview-thumb.show {
+      display: block;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .modal-footer button {
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      color: #a0a0b8;
+    }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-save {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+    }
+
+    .btn-save:hover {
+      opacity: 0.9;
+    }
+
+    .add-slide-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      color: #6b7280;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+
+    .add-slide-btn:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #a0a0b8;
+    }
+
+    .remove-slide-btn {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0;
+      margin-left: 0.5rem;
+      transition: color 0.2s;
+      font-family: inherit;
+    }
+
+    .remove-slide-btn:hover { color: #ef4444; }
+
+    .slide-setting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar.collapsed {
+        margin-left: -240px;
+      }
+
+      .nav-arrow { width: 40px; height: 40px; font-size: 1rem; }
+      .nav-arrow.prev { left: 0.75rem; }
+      .nav-arrow.next { right: 0.75rem; }
+      .dots { bottom: 1.5rem; }
+      .modal { width: 95%; max-height: 90vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-header-left">
+      <a href="decks.html" id="decksLink" title="All Decks" style="color:#a0a0b8;text-decoration:none;font-size:0.9rem;line-height:1;margin-right:0.25rem;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a0a0b8'">&#9776;</a>
+      <h3>Slides</h3>
+      <span id="slideCount">1</span>
+    </div>
+    <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&times;</button>
+  </div>
+  <div class="deck-row" style="padding: 0.5rem 0.75rem; display: flex; gap: 0.35rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
+    <input type="text" id="deckInput" placeholder="Deck name" spellcheck="false" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:0.35rem;padding:0.35rem 0.5rem;color:#e2e8f0;font-size:0.75rem;outline:none;font-family:inherit;min-width:0;">
+    <select id="deckSelect" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:0.35rem;padding:0.35rem 0.5rem;color:#e2e8f0;font-size:0.75rem;outline:none;font-family:inherit;cursor:pointer;max-width:100px;">
+      <option value="">Load</option>
+    </select>
+  </div>
+  <div class="sidebar-thumbnails" id="thumbnails">
+    <div class="skeleton skeleton-thumb" id="skeletonThumb1"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+    <div class="skeleton skeleton-thumb" id="skeletonThumb2"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line short"></div></div>
+    <div class="skeleton skeleton-thumb" id="skeletonThumb3"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+  </div>
+  <button class="sidebar-add-btn" id="sidebarAddBtn"><svg class="svg-icon" style="width: 1.5em; height: 1.5em;vertical-align: middle;fill: currentColor;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M514 912c-219.9 0-398.8-178.9-398.8-398.8S294.1 114.4 514 114.4s398.8 178.9 398.8 398.8S733.9 912 514 912z m0-701.5c-166.9 0-302.7 135.8-302.7 302.7 0 166.9 135.8 302.7 302.7 302.7s302.7-135.8 302.7-302.7c0-166.9-135.8-302.7-302.7-302.7z" fill="#666" /><path d="M570.1 569.3h126.3c30.9 0 56.1-25.2 56.1-56.1 0-30.9-25.2-56.1-56.1-56.1H570.1V330.8c0-30.9-25.2-56.1-56.1-56.1-30.9 0-56.1 25.2-56.1 56.1v126.3H331.6c-30.9 0-56.1 25.2-56.1 56.1 0 30.9 25.2 56.1 56.1 56.1h126.3v126.3c0 30.9 25.2 56.1 56.1 56.1s56.1-25.2 56.1-56.1V569.3z" fill="#aaa" /></svg> New Slide</button>
+</div>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">&#9776;</button>
+
+<div class="main-area">
+  <div class="slideshow-container" id="slideshow">
+    <div class="slide active" data-slide="0">
+      <div class="slide-img-wrap">
+        <img alt="" draggable="false">
+        <div class="resize-handle nw"></div>
+        <div class="resize-handle n"></div>
+        <div class="resize-handle ne"></div>
+        <div class="resize-handle e"></div>
+        <div class="resize-handle se"></div>
+        <div class="resize-handle s"></div>
+        <div class="resize-handle sw"></div>
+        <div class="resize-handle w"></div>
+      </div>
+      <div class="img-props" data-slide="0">
+        <button data-mode="cover">Cover</button>
+        <button data-mode="contain">Contain</button>
+        <button data-mode="fill">Fill</button>
+        <button data-mode="original">Original</button>
+      </div>
+      <div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number 1</div><div class="fb-label">Import image or paste from clipboard</div></div></div>
+      <div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>
+      <span class="slide-label">Slide 1</span>
+      <span class="slide-number">1 / 1</span>
+    </div>
+
+    <button class="nav-arrow prev" id="prevBtn" aria-label="Previous slide">&#8249;</button>
+    <button class="nav-arrow next" id="nextBtn" aria-label="Next slide">&#8250;</button>
+
+    <div class="dots" id="dots"></div>
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    <div class="skeleton-slide" id="skeletonSlide">
+      <div class="skeleton-slide-box">
+        <div class="skeleton-slide-circle"></div>
+        <div class="skeleton-slide-line"></div>
+        <div class="skeleton-slide-line"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="settings-btn" id="settingsBtn" aria-label="Settings">&#9881;</button>
+<button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen">&#9974;</button>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Slide Images</h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modalCancel">Cancel</button>
+      <button class="btn-save" id="modalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p id="confirmMsg">Are you sure you want to delete this slide?</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" id="confirmCancel">Cancel</button>
+      <button class="btn-danger" id="confirmDelete">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" data-action="set-url">Set Image URL</div>
+  <div class="ctx-item" data-action="remove">Remove Image</div>
+  <div class="ctx-item" data-action="duplicate">Duplicate Slide</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item ctx-sub" data-action="fit">Fit Mode</div>
+  <div class="ctx-submenu" id="ctxFitSub">
+    <div class="ctx-item" data-action="fit-cover">Cover</div>
+    <div class="ctx-item" data-action="fit-contain">Contain</div>
+    <div class="ctx-item" data-action="fit-fill">Fill</div>
+    <div class="ctx-item" data-action="fit-original">Original</div>
+  </div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item" data-action="copy">Copy Image</div>
+  <div class="ctx-item" data-action="paste">Paste Image</div>
+</div>
+
+<script>
+  (async function () {
+    const container = document.getElementById('slideshow');
+    const slides = Array.from(container.querySelectorAll('.slide'));
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const dotsContainer = document.getElementById('dots');
+    const progressBar = document.getElementById('progressBar');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalBody = document.getElementById('modalBody');
+    const modalClose = document.getElementById('modalClose');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalSave = document.getElementById('modalSave');
+    const thumbnails = document.getElementById('thumbnails');
+    const slideCount = document.getElementById('slideCount');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmMsg = document.getElementById('confirmMsg');
+    const confirmCancel = document.getElementById('confirmCancel');
+    const confirmDelete = document.getElementById('confirmDelete');
+    const ctxMenu = document.getElementById('ctxMenu');
+    const ctxFitSub = document.getElementById('ctxFitSub');
+
+    let ctxSlideIdx = -1;
+
+    let current = 0;
+    let slideUrls = {};
+    let savedCount = 0;
+    let settingsDirty = false;
+    let dragSrcIndex = null;
+    let dropPlaceholder = null;
+
+    let deckName = new URLSearchParams(window.location.search).get('deck') || localStorage.getItem('deckName') || 'Default';
+    if (new URLSearchParams(window.location.search).get('deck')) {
+      localStorage.setItem('deckName', deckName);
+    }
+    let resizeData = {};
+    let slideMode = {};
+    let slideNames = {};
+    let activeResize = null;
+    let undoData = null;
+    let dragCandidate = null;
+    let apiBaseUrl = localStorage.getItem('apiBaseUrl') || ('http://localhost:' + (location.port || '3002'));
+
+    function resolveUrl(path) {
+      if (!path) return path;
+      if (path.startsWith('/api/')) return apiBaseUrl + path;
+      if (path.match(/^https?:\/\//)) return path;
+      return apiBaseUrl + '/' + path.replace(/^\//, '');
+    }
+
+    async function loadFromServer() {
+      try {
+        const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)));
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const kv = data.kv || {};
+        slideUrls = kv.urls || {};
+        savedCount = kv.count || 1;
+        resizeData = kv.resize || {};
+        slideMode = kv.mode || {};
+        slideNames = kv.names || {};
+        if (kv.apiUrl) {
+          apiBaseUrl = kv.apiUrl;
+          localStorage.setItem('apiBaseUrl', kv.apiUrl);
+        }
+      } catch (_) {}
+    }
+
+    async function saveToServer() {
+      try {
+        const kv = {
+          count: slides.length,
+          urls: { ...slideUrls },
+          resize: { ...resizeData },
+          mode: { ...slideMode },
+          names: { ...slideNames },
+          apiUrl: apiBaseUrl
+        };
+        const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kv })
+        });
+        if (!resp.ok) return;
+        const result = await resp.json();
+        if (result.kv && result.kv.urls) {
+          slideUrls = result.kv.urls;
+        }
+      } catch (_) {}
+    }
+
+    function applyMode(img, idx) {
+      if (!img) return;
+      const mode = slideMode[idx] || 'contain';
+      if (mode === 'cover') { img.style.objectFit = 'cover'; }
+      else if (mode === 'contain') { img.style.objectFit = 'contain'; }
+      else if (mode === 'fill') { img.style.objectFit = 'fill'; }
+      else if (mode === 'original') { img.style.objectFit = 'none'; }
+    }
+
+    async function uploadImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const dataUrl = ev.target.result;
+          const commaIdx = dataUrl.indexOf(',');
+          const base64Data = dataUrl.substring(commaIdx + 1);
+          const header = dataUrl.substring(0, commaIdx);
+          const mime = (header.match(/:(.*?);/) || [])[1] || 'image/png';
+          try {
+            const resp = await fetch(resolveUrl('/api/upload'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ data: base64Data, mime })
+            });
+            const result = await resp.json();
+            resolve(result.url);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function applySlideImage(el, url) {
+      const wrap = el.querySelector('.slide-img-wrap');
+      const img = wrap?.querySelector('img');
+      const fallback = el.querySelector('.fallback-msg');
+      if (url && url.trim()) {
+        el.classList.add('has-image');
+        if (img && wrap) {
+          img.src = resolveUrl(url.trim());
+          applyMode(img, el.dataset.slide);
+          wrap.style.display = 'block';
+          const rd = resizeData[el.dataset.slide];
+          if (rd) {
+            wrap.style.left = rd.x;
+            wrap.style.top = rd.y;
+            wrap.style.width = rd.w;
+            wrap.style.height = rd.h;
+          } else {
+            wrap.style.left = '10%';
+            wrap.style.top = '10%';
+            wrap.style.width = '80%';
+            wrap.style.height = '80%';
+          }
+        }
+        if (fallback) fallback.style.display = 'none';
+      } else {
+        el.classList.remove('has-image');
+        el.style.backgroundImage = 'none';
+        if (wrap) wrap.style.display = 'none';
+        if (fallback) fallback.style.display = '';
+      }
+    }
+
+    function applyAllImages() {
+      slides.forEach((el, i) => {
+        applySlideImage(el, slideUrls[i] || '');
+      });
+    }
+
+    function getSlideName(i) {
+      return slideNames[i] || 'Slide ' + (i + 1);
+    }
+
+    function setupSlideDrop(el) {
+      el.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        el.classList.add('drag-over');
+      });
+
+      el.addEventListener('dragleave', () => {
+        el.classList.remove('drag-over');
+      });
+
+      el.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const idx = parseInt(el.dataset.slide);
+          try {
+            const serverUrl = await uploadImage(file);
+            slideUrls[idx] = serverUrl;
+            delete resizeData[idx];
+            applySlideImage(el, serverUrl);
+            saveToServer();
+            rebuildThumbnails();
+            update();
+          } catch (_) {}
+        }
+      });
+    }
+
+    function setupResize(el) {
+      const wrap = el.querySelector('.slide-img-wrap');
+      if (!wrap) return;
+      const handles = wrap.querySelectorAll('.resize-handle');
+      const props = el.querySelector('.img-props');
+
+      if (props) {
+        const btns = props.querySelectorAll('button');
+        btns.forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(el.dataset.slide);
+            const mode = btn.dataset.mode;
+            slideMode[idx] = mode;
+            const img = wrap.querySelector('img');
+            applyMode(img, idx);
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            saveToServer();
+          });
+        });
+      }
+
+      el.addEventListener('click', (e) => {
+        const clickedWrap = e.target.closest('.slide-img-wrap');
+        slides.forEach(s => {
+          const w = s.querySelector('.slide-img-wrap');
+          if (w) w.classList.remove('selected');
+        });
+        if (clickedWrap && !document.documentElement.classList.contains('fullscreen')) {
+          clickedWrap.classList.add('selected');
+          const propsPanel = el.querySelector('.img-props');
+          if (propsPanel) {
+            const mode = slideMode[el.dataset.slide] || 'contain';
+            propsPanel.querySelectorAll('button').forEach(b => {
+              b.classList.toggle('active', b.dataset.mode === mode);
+            });
+          }
+        }
+      });
+
+      handles.forEach(handle => {
+        handle.addEventListener('mousedown', (e) => {
+          if (document.documentElement.classList.contains('fullscreen')) return;
+          e.stopPropagation();
+          const idx = parseInt(el.dataset.slide);
+          if (idx !== current) return;
+          const rect = wrap.getBoundingClientRect();
+          const containerRect = el.getBoundingClientRect();
+          dragCandidate = {
+            idx,
+            handle: handle.className.replace('resize-handle ', ''),
+            startX: e.clientX,
+            startY: e.clientY,
+            startW: rect.width,
+            startH: rect.height,
+            startL: rect.left - containerRect.left,
+            startT: rect.top - containerRect.top,
+            containerRect
+          };
+        });
+      });
+
+      wrap.addEventListener('mousedown', (e) => {
+        if (document.documentElement.classList.contains('fullscreen')) return;
+        if (e.target.classList.contains('resize-handle')) return;
+        const idx = parseInt(el.dataset.slide);
+        if (idx !== current) return;
+        const rect = wrap.getBoundingClientRect();
+        const containerRect = el.getBoundingClientRect();
+        dragCandidate = {
+          idx,
+          handle: 'move',
+          startX: e.clientX,
+          startY: e.clientY,
+          startL: rect.left - containerRect.left,
+          startT: rect.top - containerRect.top,
+          startW: rect.width,
+          startH: rect.height,
+          containerRect
+        };
+      });
+
+      const urlBar = el.querySelector('.slide-url-bar');
+      if (urlBar) {
+        const input = urlBar.querySelector('input');
+        const btn = urlBar.querySelector('button');
+        const idx = parseInt(el.dataset.slide);
+
+        function applyUrl() {
+          const val = input.value.trim();
+          if (val) {
+            slideUrls[idx] = val;
+            delete resizeData[idx];
+            applySlideImage(el, val);
+            saveToServer();
+            rebuildThumbnails();
+            update();
+          }
+          urlBar.classList.remove('show');
+        }
+
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          applyUrl();
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); applyUrl(); }
+          if (e.key === 'Escape') { e.preventDefault(); urlBar.classList.remove('show'); }
+        });
+        input.addEventListener('click', (e) => e.stopPropagation());
+      }
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      if (!dragCandidate && !activeResize) return;
+
+      if (dragCandidate && !activeResize) {
+        const dx = e.clientX - dragCandidate.startX;
+        const dy = e.clientY - dragCandidate.startY;
+        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+        if (dragCandidate.idx !== current) { dragCandidate = null; return; }
+        e.preventDefault();
+        activeResize = dragCandidate;
+        dragCandidate = null;
+      }
+
+      if (!activeResize) return;
+      if (activeResize.idx !== current) { activeResize = null; return; }
+
+      const dx = e.clientX - activeResize.startX;
+      const dy = e.clientY - activeResize.startY;
+      const h = activeResize.handle;
+      const slideEl = slides[activeResize.idx];
+      const wrap = slideEl?.querySelector('.slide-img-wrap');
+      if (!wrap) return;
+
+      let x = activeResize.startL;
+      let y = activeResize.startT;
+      let w = activeResize.startW;
+      let hh = activeResize.startH;
+      const min = 30;
+
+      const sides = {
+        'e':  () => { w = Math.max(min, activeResize.startW + dx); },
+        'w':  () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw; },
+        's':  () => { hh = Math.max(min, activeResize.startH + dy); },
+        'n':  () => { const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh; },
+        'ne': () => { w = Math.max(min, activeResize.startW + dx); const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh; },
+        'nw': () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw; const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh; },
+        'se': () => { w = Math.max(min, activeResize.startW + dx); hh = Math.max(min, activeResize.startH + dy); },
+        'sw': () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw; hh = Math.max(min, activeResize.startH + dy); },
+        'move': () => { x = activeResize.startL + dx; y = activeResize.startT + dy; }
+      };
+
+      if (sides[h]) sides[h]();
+
+      wrap.style.left = x + 'px';
+      wrap.style.top = y + 'px';
+      wrap.style.width = w + 'px';
+      wrap.style.height = hh + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (activeResize) {
+        if (activeResize.idx !== current) { activeResize = null; dragCandidate = null; return; }
+        const slideEl = slides[activeResize.idx];
+        const wrap = slideEl?.querySelector('.slide-img-wrap');
+        if (wrap) {
+          const sw = slideEl.offsetWidth;
+          const sh = slideEl.offsetHeight;
+          const wr = wrap.getBoundingClientRect();
+          const sr = slideEl.getBoundingClientRect();
+          const x = ((wr.left - sr.left) / sw * 100) + '%';
+          const y = ((wr.top - sr.top) / sh * 100) + '%';
+          const w = (wr.width / sw * 100) + '%';
+          const h = (wr.height / sh * 100) + '%';
+          resizeData[activeResize.idx] = { x, y, w, h };
+          wrap.style.left = x;
+          wrap.style.top = y;
+          wrap.style.width = w;
+          wrap.style.height = h;
+          saveToServer();
+        }
+        activeResize = null;
+      }
+      dragCandidate = null;
+    });
+
+    function createDropPlaceholder() {
+      const el = document.createElement('div');
+      el.className = 'drop-placeholder';
+      return el;
+    }
+
+    let confirmCb = null;
+
+    function showConfirm(msg, cb) {
+      confirmMsg.textContent = msg;
+      confirmCb = cb;
+      confirmOverlay.classList.add('open');
+    }
+
+    function hideConfirm() {
+      confirmOverlay.classList.remove('open');
+      confirmCb = null;
+    }
+
+    confirmCancel.addEventListener('click', hideConfirm);
+    confirmDelete.addEventListener('click', () => {
+      const cb = confirmCb;
+      hideConfirm();
+      if (cb) cb();
+    });
+    confirmOverlay.addEventListener('click', (e) => {
+      if (e.target === confirmOverlay) hideConfirm();
+    });
+
+    function clearDropPlaceholder() {
+      if (dropPlaceholder && dropPlaceholder.parentNode) {
+        dropPlaceholder.parentNode.removeChild(dropPlaceholder);
+      }
+      dropPlaceholder = null;
+    }
+
+    function reorderSlides(fromIdx, toIdx) {
+      if (fromIdx === toIdx) return;
+
+      const urlsInOrder = slides.map((_, i) => slideUrls[i] || '');
+      const resizeInOrder = slides.map((_, i) => resizeData[i] || null);
+      const modeInOrder = slides.map((_, i) => slideMode[i] || 'contain');
+      const namesInOrder = slides.map((_, i) => slideNames[i] || '');
+
+      const [moved] = slides.splice(fromIdx, 1);
+      slides.splice(toIdx, 0, moved);
+
+      const [movedUrl] = urlsInOrder.splice(fromIdx, 1);
+      urlsInOrder.splice(toIdx, 0, movedUrl);
+
+      const [movedResize] = resizeInOrder.splice(fromIdx, 1);
+      resizeInOrder.splice(toIdx, 0, movedResize);
+
+      const [movedMode] = modeInOrder.splice(fromIdx, 1);
+      modeInOrder.splice(toIdx, 0, movedMode);
+
+      const [movedName] = namesInOrder.splice(fromIdx, 1);
+      namesInOrder.splice(toIdx, 0, movedName);
+
+      slideUrls = {};
+      resizeData = {};
+      slideMode = {};
+      slideNames = {};
+      urlsInOrder.forEach((url, i) => {
+        if (url) slideUrls[i] = url;
+      });
+      resizeInOrder.forEach((rd, i) => {
+        if (rd) resizeData[i] = rd;
+      });
+      modeInOrder.forEach((m, i) => {
+        if (m) slideMode[i] = m;
+      });
+      namesInOrder.forEach((n, i) => {
+        if (n) slideNames[i] = n;
+      });
+
+      slides.forEach(el => container.appendChild(el));
+
+      slides.forEach((el, i) => {
+        el.dataset.slide = i;
+        el.querySelector('.slide-label').textContent = getSlideName(i);
+        applySlideImage(el, slideUrls[i] || '');
+      });
+
+      if (current === fromIdx) current = toIdx;
+      else if (fromIdx < toIdx && current > fromIdx && current <= toIdx) current--;
+      else if (fromIdx > toIdx && current < fromIdx && current >= toIdx) current++;
+
+      saveToServer();
+      rebuildThumbnails();
+      update();
+    }
+
+    function rebuildThumbnails() {
+      thumbnails.innerHTML = '';
+      slides.forEach((el, i) => {
+        const item = document.createElement('div');
+        item.className = 'thumb-item' + (i === current ? ' active' : '');
+        item.dataset.index = i;
+        item.draggable = true;
+
+        const preview = document.createElement('div');
+        preview.className = 'thumb-preview';
+        const url = slideUrls[i];
+        if (url && url.trim()) {
+          preview.style.backgroundImage = 'url("' + resolveUrl(url).replace(/"/g, '\\"') + '")';
+        } else {
+          preview.innerHTML = '<span class="thumb-placeholder">&#x1F5BC;</span>';
+        }
+
+        const info = document.createElement('div');
+        info.className = 'thumb-info';
+
+        const label = document.createElement('span');
+        label.className = 'thumb-label';
+        const labelText = getSlideName(i);
+        label.textContent = labelText;
+
+        const desc = document.createElement('span');
+        desc.className = 'thumb-desc';
+        desc.textContent = url && url.trim() ? (url.split('/').pop() || 'Image') : 'No image';
+
+        info.appendChild(label);
+        info.appendChild(desc);
+        item.appendChild(preview);
+        item.appendChild(info);
+
+        item.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          const curName = getSlideName(i);
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = slideNames[i] || '';
+          input.className = 'thumb-rename-input';
+          input.placeholder = 'Slide ' + (i + 1);
+          input.dataset.index = i;
+          label.textContent = '';
+          label.appendChild(input);
+          input.focus();
+          input.select();
+
+          function commitRename() {
+            const val = input.value.trim();
+            if (val) {
+              slideNames[i] = val;
+            } else {
+              delete slideNames[i];
+            }
+            label.textContent = getSlideName(i);
+            const slideEl = slides[i];
+            const slideLabel = slideEl.querySelector('.slide-label');
+            if (slideLabel) slideLabel.textContent = getSlideName(i);
+            const fbNum = slideEl.querySelector('.fb-num');
+            if (fbNum) fbNum.textContent = getSlideName(i);
+            saveToServer();
+            const items = thumbnails.querySelectorAll('.thumb-item');
+            items.forEach((it, idx) => {
+              const lb = it.querySelector('.thumb-label');
+              if (lb && idx === i) lb.textContent = getSlideName(i);
+            });
+          }
+
+          input.addEventListener('blur', commitRename);
+          input.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+            if (ev.key === 'Escape') { ev.preventDefault(); label.textContent = getSlideName(i); }
+          });
+        });
+
+        const dupBtn = document.createElement('button');
+        dupBtn.className = 'thumb-dup-btn';
+        dupBtn.textContent = '⧉';
+        dupBtn.title = 'Duplicate slide';
+        dupBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          duplicateSlide(i);
+        });
+        item.appendChild(dupBtn);
+
+        if (slides.length > 1) {
+          const delBtn = document.createElement('button');
+          delBtn.className = 'thumb-del-btn';
+          delBtn.textContent = 'x';
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showConfirm('Delete Slide ' + (i + 1) + '?', () => removeSlide(i));
+          });
+          item.appendChild(delBtn);
+        }
+
+        item.addEventListener('click', () => goTo(i));
+
+        item.addEventListener('dragstart', (e) => {
+          dragSrcIndex = i;
+          item.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', i);
+        });
+
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+          clearDropPlaceholder();
+          dragSrcIndex = null;
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (dragSrcIndex === null || dragSrcIndex === i) return;
+
+          const rect = item.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          const insertBefore = e.clientY < midY;
+
+          if (dropPlaceholder && dropPlaceholder.parentNode) {
+            const currentPos = Array.from(thumbnails.children).indexOf(dropPlaceholder);
+            const targetPos = Array.from(thumbnails.children).indexOf(item);
+            const expectedPos = insertBefore ? targetPos : targetPos + 1;
+            if (currentPos === expectedPos) return;
+            dropPlaceholder.remove();
+          }
+
+          dropPlaceholder = createDropPlaceholder();
+          if (insertBefore) {
+            thumbnails.insertBefore(dropPlaceholder, item);
+          } else {
+            thumbnails.insertBefore(dropPlaceholder, item.nextSibling);
+          }
+        });
+
+        item.addEventListener('dragleave', (e) => {
+          if (dropPlaceholder && !e.relatedTarget?.closest?.('.thumb-item, .drop-placeholder')) {
+            clearDropPlaceholder();
+          }
+        });
+
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          clearDropPlaceholder();
+          if (dragSrcIndex !== null && dragSrcIndex !== i) {
+            reorderSlides(dragSrcIndex, i);
+          }
+        });
+
+        thumbnails.appendChild(item);
+      });
+
+      thumbnails.addEventListener('dragover', (e) => {
+        if (dragSrcIndex === null) return;
+        e.preventDefault();
+        const children = Array.from(thumbnails.children);
+        const lastItem = children.filter(c => c.classList.contains('thumb-item')).pop();
+        if (!lastItem) return;
+        const rect = lastItem.getBoundingClientRect();
+        if (e.clientY > rect.bottom && !dropPlaceholder?.parentNode) {
+          dropPlaceholder = createDropPlaceholder();
+          thumbnails.appendChild(dropPlaceholder);
+        }
+      });
+
+      thumbnails.addEventListener('dragleave', (e) => {
+        if (dropPlaceholder && !thumbnails.contains(e.relatedTarget)) {
+          clearDropPlaceholder();
+        }
+      });
+
+      thumbnails.addEventListener('drop', (e) => {
+        if (dragSrcIndex === null) return;
+        e.preventDefault();
+        const target = e.target.closest('.thumb-item');
+        if (target) return;
+        if (dropPlaceholder?.parentNode) {
+          const toIdx = slides.length - 1;
+          if (dragSrcIndex !== toIdx) reorderSlides(dragSrcIndex, toIdx);
+          clearDropPlaceholder();
+        }
+      });
+
+      slideCount.textContent = slides.length;
+    }
+
+    function rebuildSlides() {
+      while (dotsContainer.firstChild) dotsContainer.removeChild(dotsContainer.firstChild);
+      createDots();
+      current = Math.min(current, slides.length - 1);
+      update();
+      applyAllImages();
+      rebuildThumbnails();
+    }
+
+    function addSlide() {
+      const idx = slides.length;
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      slide.dataset.slide = idx;
+      slide.innerHTML =
+        '<div class="slide-img-wrap">' +
+          '<img alt="" draggable="false">' +
+          '<div class="resize-handle nw"></div>' +
+          '<div class="resize-handle n"></div>' +
+          '<div class="resize-handle ne"></div>' +
+          '<div class="resize-handle e"></div>' +
+          '<div class="resize-handle se"></div>' +
+          '<div class="resize-handle s"></div>' +
+          '<div class="resize-handle sw"></div>' +
+          '<div class="resize-handle w"></div>' +
+        '</div>' +
+        '<div class="img-props" data-slide="' + idx + '">' +
+          '<button data-mode="cover">Cover</button>' +
+          '<button data-mode="contain">Contain</button>' +
+          '<button data-mode="fill">Fill</button>' +
+          '<button data-mode="original">Original</button>' +
+        '</div>' +
+        '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (idx + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
+        '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
+        '<span class="slide-label">Slide ' + (idx + 1) + '</span>' +
+        '<span class="slide-number">' + (idx + 1) + ' / ' + (idx + 1) + '</span>';
+      container.appendChild(slide);
+      slides.push(slide);
+      setupSlideDrop(slide);
+      setupResize(slide);
+      applySlideImage(slide, slideUrls[idx] || '');
+      rebuildSlides();
+      goTo(idx);
+      saveToServer();
+      settingsDirty = true;
+    }
+
+    function removeSlide(index) {
+      if (slides.length <= 1) return;
+      const el = slides[index];
+      el.remove();
+      slides.splice(index, 1);
+      delete slideUrls[index];
+      delete resizeData[index];
+      delete slideMode[index];
+      delete slideNames[index];
+      const reindexed = {};
+      slides.forEach((_, i) => {
+        if (slideUrls[i] !== undefined) reindexed[i] = slideUrls[i];
+        else if (slideUrls[i + 1] !== undefined) reindexed[i] = slideUrls[i + 1];
+      });
+      slideUrls = reindexed;
+      const resizeReindexed = {};
+      slides.forEach((_, i) => {
+        if (resizeData[i] !== undefined) resizeReindexed[i] = resizeData[i];
+        else if (resizeData[i + 1] !== undefined) resizeReindexed[i] = resizeData[i + 1];
+      });
+      resizeData = resizeReindexed;
+      const modeReindexed = {};
+      slides.forEach((_, i) => {
+        if (slideMode[i] !== undefined) modeReindexed[i] = slideMode[i];
+        else if (slideMode[i + 1] !== undefined) modeReindexed[i] = slideMode[i + 1];
+      });
+      slideMode = modeReindexed;
+      const namesReindexed = {};
+      slides.forEach((_, i) => {
+        if (slideNames[i] !== undefined) namesReindexed[i] = slideNames[i];
+        else if (slideNames[i + 1] !== undefined) namesReindexed[i] = slideNames[i + 1];
+      });
+      slideNames = namesReindexed;
+      slides.forEach((el, i) => {
+        el.dataset.slide = i;
+        el.querySelector('.slide-label').textContent = getSlideName(i);
+      });
+      rebuildSlides();
+      saveToServer();
+      settingsDirty = true;
+    }
+
+    function duplicateSlide(index) {
+      const idx = index + 1;
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      slide.dataset.slide = idx;
+      slide.innerHTML =
+        '<div class="slide-img-wrap">' +
+          '<img alt="" draggable="false">' +
+          '<div class="resize-handle nw"></div>' +
+          '<div class="resize-handle n"></div>' +
+          '<div class="resize-handle ne"></div>' +
+          '<div class="resize-handle e"></div>' +
+          '<div class="resize-handle se"></div>' +
+          '<div class="resize-handle s"></div>' +
+          '<div class="resize-handle sw"></div>' +
+          '<div class="resize-handle w"></div>' +
+        '</div>' +
+        '<div class="img-props" data-slide="' + idx + '">' +
+          '<button data-mode="cover">Cover</button>' +
+          '<button data-mode="contain">Contain</button>' +
+          '<button data-mode="fill">Fill</button>' +
+          '<button data-mode="original">Original</button>' +
+        '</div>' +
+        '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (idx + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
+        '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
+        '<span class="slide-label">Slide ' + (idx + 1) + '</span>' +
+        '<span class="slide-number">' + (idx + 1) + ' / ' + (idx + 1) + '</span>';
+      const refSlide = slides[index];
+      refSlide.parentNode.insertBefore(slide, refSlide.nextSibling);
+      slides.splice(idx, 0, slide);
+
+      if (slideUrls[index]) slideUrls[idx] = slideUrls[index];
+      if (resizeData[index]) resizeData[idx] = { ...resizeData[index] };
+      if (slideMode[index]) slideMode[idx] = slideMode[index];
+      if (slideNames[index]) slideNames[idx] = slideNames[index] + ' (Copy)';
+
+      slides.forEach((el, i) => {
+        el.dataset.slide = i;
+        el.querySelector('.slide-label').textContent = getSlideName(i);
+      });
+
+      setupSlideDrop(slide);
+      setupResize(slide);
+      applySlideImage(slide, slideUrls[idx] || '');
+      rebuildSlides();
+      goTo(idx);
+      saveToServer();
+      settingsDirty = true;
+    }
+
+    function createDots() {
+      slides.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = 'dot' + (i === 0 ? ' active' : '');
+        dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+        dot.addEventListener('click', () => goTo(i));
+        dotsContainer.appendChild(dot);
+      });
+    }
+
+    function update() {
+      slides.forEach((el, i) => {
+        el.classList.remove('active', 'exit-prev', 'exit-next');
+        if (i === current) el.classList.add('active');
+      });
+
+      const dots = dotsContainer.querySelectorAll('.dot');
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+
+      const total = slides.length;
+      progressBar.style.width = ((current + 1) / total * 100) + '%';
+
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+
+      slides.forEach((el, i) => {
+        el.querySelector('.slide-number').textContent = (i + 1) + ' / ' + total;
+        const slideLabel = el.querySelector('.slide-label');
+        if (slideLabel) slideLabel.textContent = getSlideName(i);
+        const fbNum = el.querySelector('.fb-num');
+        if (fbNum) fbNum.textContent = getSlideName(i);
+      });
+
+      const items = thumbnails.querySelectorAll('.thumb-item');
+      items.forEach((item, i) => item.classList.toggle('active', i === current));
+    }
+
+    function goTo(index) {
+      if (index < 0 || index >= slides.length || index === current) return;
+      slides.forEach(el => el.classList.remove('exit-prev', 'exit-next'));
+      current = index;
+      update();
+      const activeThumb = thumbnails.querySelector('.thumb-item.active');
+      if (activeThumb) activeThumb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function prev() {
+      if (current === 0) return;
+      slides[current].classList.add('exit-prev');
+      current--;
+      update();
+    }
+
+    function next() {
+      if (current === slides.length - 1) return;
+      slides[current].classList.add('exit-next');
+      current++;
+      update();
+    }
+
+    function openSettings() {
+      settingsDirty = false;
+      modalBody.innerHTML = '';
+      const apiDiv = document.createElement('div');
+      apiDiv.className = 'slide-setting';
+      apiDiv.style.borderBottom = '2px solid rgba(99, 102, 241, 0.3)';
+      apiDiv.style.marginBottom = '0.5rem';
+      const apiLabel = document.createElement('label');
+      apiLabel.textContent = 'API Server URL';
+      apiLabel.style.color = '#a5b4fc';
+      const apiInput = document.createElement('input');
+      apiInput.type = 'text';
+      apiInput.placeholder = 'http://localhost:' + (location.port || '3002');
+      apiInput.value = apiBaseUrl;
+      apiInput.dataset.apiUrl = '1';
+      apiInput.addEventListener('input', () => {
+        settingsDirty = true;
+      });
+      apiDiv.appendChild(apiLabel);
+      apiDiv.appendChild(apiInput);
+      modalBody.appendChild(apiDiv);
+
+      modalOverlay.classList.add('open');
+    }
+
+    function closeSettings() {
+      modalOverlay.classList.remove('open');
+    }
+
+    function saveSettings() {
+      const inputs = modalBody.querySelectorAll('input');
+      inputs.forEach(input => {
+        if (input.dataset.apiUrl !== undefined) {
+          const val = input.value.trim();
+          if (val) apiBaseUrl = val.replace(/\/+$/, '');
+          localStorage.setItem('apiBaseUrl', apiBaseUrl);
+          return;
+        }
+        const idx = parseInt(input.dataset.index);
+        const val = input.value.trim();
+        if (val) {
+          slideUrls[idx] = val;
+        } else {
+          delete slideUrls[idx];
+        }
+      });
+      saveToServer();
+      applyAllImages();
+      rebuildThumbnails();
+      settingsDirty = false;
+      closeSettings();
+    }
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+    });
+
+    document.getElementById('sidebarClose').addEventListener('click', () => {
+      sidebar.classList.add('collapsed');
+    });
+
+    document.getElementById('sidebarAddBtn').addEventListener('click', addSlide);
+
+    async function loadDeck(name) {
+      deckName = name;
+      localStorage.setItem('deckName', name);
+      document.getElementById('deckInput').value = name;
+      await loadFromServer();
+      while (slides.length > 1) {
+        const el = slides.pop();
+        el.remove();
+      }
+      if (slides[0]) {
+        slides[0].dataset.slide = 0;
+        slides[0].querySelector('.slide-label').textContent = getSlideName(0);
+        const fbNum = slides[0].querySelector('.fb-num');
+        if (fbNum) fbNum.textContent = getSlideName(0);
+        slides[0].querySelector('.slide-number').textContent = '1 / 1';
+      }
+      for (let i = 1; i < savedCount; i++) {
+        const slide = document.createElement('div');
+        slide.className = 'slide';
+        slide.dataset.slide = i;
+        slide.innerHTML =
+          '<div class="slide-img-wrap">' +
+            '<img alt="" draggable="false">' +
+            '<div class="resize-handle nw"></div>' +
+            '<div class="resize-handle n"></div>' +
+            '<div class="resize-handle ne"></div>' +
+            '<div class="resize-handle e"></div>' +
+            '<div class="resize-handle se"></div>' +
+            '<div class="resize-handle s"></div>' +
+            '<div class="resize-handle sw"></div>' +
+            '<div class="resize-handle w"></div>' +
+          '</div>' +
+          '<div class="img-props" data-slide="' + i + '">' +
+            '<button data-mode="cover">Cover</button>' +
+            '<button data-mode="contain">Contain</button>' +
+            '<button data-mode="fill">Fill</button>' +
+            '<button data-mode="original">Original</button>' +
+          '</div>' +
+          '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">' + getSlideName(i) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
+          '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
+          '<span class="slide-label">' + getSlideName(i) + '</span>' +
+          '<span class="slide-number">' + (i + 1) + ' / ' + savedCount + '</span>';
+        container.appendChild(slide);
+        slides.push(slide);
+      }
+      slides.forEach(el => { setupSlideDrop(el); setupResize(el); });
+      createDots();
+      applyAllImages();
+      rebuildThumbnails();
+      update();
+      current = 0;
+    }
+
+    async function populateDeckList() {
+      try {
+        const resp = await fetch(resolveUrl('/api/decks'));
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const select = document.getElementById('deckSelect');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">' + (data.decks && data.decks.length ? 'Switch deck...' : 'No decks') + '</option>';
+        (data.decks || []).forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
+        });
+        select.value = currentVal;
+      } catch (_) {}
+    }
+
+    const deckInput = document.getElementById('deckInput');
+    deckInput.value = deckName;
+    deckInput.addEventListener('change', () => {
+      const name = deckInput.value.trim() || 'Default';
+      loadDeck(name);
+      populateDeckList();
+    });
+    deckInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); deckInput.blur(); }
+    });
+
+    document.getElementById('deckSelect').addEventListener('change', (e) => {
+      const name = e.target.value;
+      if (!name) return;
+      loadDeck(name);
+      e.target.value = '';
+    });
+
+    populateDeckList();
+
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFull = !!document.fullscreenElement;
+      document.documentElement.classList.toggle('fullscreen', isFull);
+      fullscreenBtn.innerHTML = isFull ? '&#9212;' : '&#9974;';
+      fullscreenBtn.title = isFull ? 'Exit fullscreen' : 'Fullscreen';
+      sidebar.classList.toggle('collapsed', isFull);
+      document.getElementById('settingsBtn').style.display = isFull ? 'none' : '';
+      sidebarToggle.style.display = isFull ? 'none' : '';
+      container.style.width = isFull ? '100%' : '';
+      container.style.maxWidth = isFull ? 'none' : '';
+      container.style.height = isFull ? '100vh' : '';
+      container.style.borderRadius = isFull ? '0' : '';
+    });
+
+    settingsBtn.addEventListener('click', openSettings);
+    modalClose.addEventListener('click', closeSettings);
+    modalCancel.addEventListener('click', closeSettings);
+    modalSave.addEventListener('click', saveSettings);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeSettings();
+    });
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    function getSelectedImgIdx() {
+      const sel = document.querySelector('.slide-img-wrap.selected');
+      if (!sel) return -1;
+      const slide = sel.closest('.slide');
+      return slide ? parseInt(slide.dataset.slide) : -1;
+    }
+
+    function deleteSelectedImage() {
+      const idx = getSelectedImgIdx();
+      if (idx < 0) return;
+      const wrap = slides[idx]?.querySelector('.slide-img-wrap');
+      if (wrap) {
+        wrap.classList.remove('selected');
+      }
+      undoData = { idx, url: slideUrls[idx] || null, resize: resizeData[idx] || null, mode: slideMode[idx] || null };
+      delete slideUrls[idx];
+      delete resizeData[idx];
+      delete slideMode[idx];
+      applySlideImage(slides[idx], '');
+      saveToServer();
+      rebuildThumbnails();
+    }
+
+    function undoDelete() {
+      if (!undoData) return;
+      let idx = undoData.idx;
+      if (idx >= slides.length) idx = slides.length - 1;
+      if (undoData.url) slideUrls[idx] = undoData.url;
+      if (undoData.resize) resizeData[idx] = undoData.resize;
+      if (undoData.mode) slideMode[idx] = undoData.mode;
+      applySlideImage(slides[idx], undoData.url || '');
+      undoData = null;
+      saveToServer();
+      rebuildThumbnails();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (modalOverlay.classList.contains('open')) {
+        if (e.key === 'Escape') { e.preventDefault(); closeSettings(); }
+        if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveSettings(); }
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault(); next();
+      }
+      if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+      if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (getSelectedImgIdx() >= 0) { e.preventDefault(); deleteSelectedImage(); }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault(); undoDelete();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault(); duplicateSlide(current);
+      }
+      if (e.key === 'Escape') {
+        if (ctxMenu.classList.contains('show')) { hideCtxMenu(); }
+        else { e.preventDefault(); settingsBtn.click(); }
+      }
+    });
+
+    document.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      let imgItem = null;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) { imgItem = items[i]; break; }
+      }
+      if (!imgItem) return;
+      e.preventDefault();
+      const selIdx = getSelectedImgIdx();
+      const idx = selIdx >= 0 ? selIdx : current;
+      pasteImageAt(idx, imgItem);
+    });
+
+    async function pasteImageAt(idx, imgItem) {
+      if (idx < 0 || idx >= slides.length) return;
+      const file = imgItem.getAsFile();
+      if (!file) return;
+      try {
+        const serverUrl = await uploadImage(file);
+        slideUrls[idx] = serverUrl;
+        delete resizeData[idx];
+        delete slideMode[idx];
+        const wrap = slides[idx].querySelector('.slide-img-wrap');
+        if (wrap) wrap.classList.remove('selected');
+        applySlideImage(slides[idx], serverUrl);
+        saveToServer();
+        rebuildThumbnails();
+        update();
+      } catch (_) {}
+    }
+
+    container.addEventListener('contextmenu', (e) => {
+      const slideEl = e.target.closest('.slide');
+      if (!slideEl) return;
+      e.preventDefault();
+      ctxSlideIdx = parseInt(slideEl.dataset.slide);
+      ctxMenu.style.left = e.clientX + 'px';
+      ctxMenu.style.top = e.clientY + 'px';
+      ctxMenu.classList.add('show');
+      ctxFitSub.classList.remove('show');
+    });
+
+    function hideCtxMenu() {
+      ctxMenu.classList.remove('show');
+      ctxFitSub.classList.remove('show');
+      ctxSlideIdx = -1;
+    }
+
+    ctxMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.ctx-item');
+      if (!item) return;
+      const action = item.dataset.action;
+      const idx = ctxSlideIdx;
+      if (idx < 0 || idx >= slides.length) { hideCtxMenu(); return; }
+      const slideEl = slides[idx];
+      const hasImg = !!slideUrls[idx];
+      switch (action) {
+        case 'set-url':
+          hideCtxMenu();
+          goTo(idx);
+          setTimeout(() => {
+            const targetSlide = slides[idx];
+            const urlBar = targetSlide.querySelector('.slide-url-bar');
+            if (urlBar) {
+              const input = urlBar.querySelector('input');
+              input.value = slideUrls[idx] || '';
+              urlBar.classList.add('show');
+              input.focus();
+              input.select();
+            }
+          }, 100);
+          break;
+        case 'remove':
+          if (hasImg) {
+            delete slideUrls[idx];
+            delete resizeData[idx];
+            delete slideMode[idx];
+            const wrap = slideEl.querySelector('.slide-img-wrap');
+            if (wrap) wrap.classList.remove('selected');
+            applySlideImage(slideEl, '');
+            saveToServer();
+            rebuildThumbnails();
+          }
+          break;
+        case 'duplicate':
+          duplicateSlide(idx);
+          break;
+        case 'fit-cover':
+        case 'fit-contain':
+        case 'fit-fill':
+        case 'fit-original':
+          if (hasImg) {
+            const mode = action.replace('fit-', '');
+            slideMode[idx] = mode;
+            const img = slideEl.querySelector('.slide-img-wrap img');
+            applyMode(img, idx);
+            saveToServer();
+          }
+          break;
+        case 'copy':
+          if (hasImg) {
+            navigator.clipboard.writeText(slideUrls[idx]).catch(() => {});
+          }
+          break;
+        case 'paste':
+          navigator.clipboard.read().then(clipboardItems => {
+            for (const ci of clipboardItems) {
+              for (const type of ci.types) {
+                if (type.startsWith('image/')) {
+                  ci.getType(type).then(blob => {
+                    const fakeItem = { getAsFile: () => blob };
+                    pasteImageAt(idx, fakeItem);
+                  });
+                  return;
+                }
+              }
+            }
+          }).catch(() => {});
+          break;
+      }
+      hideCtxMenu();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.ctx-menu')) hideCtxMenu();
+    });
+
+    ctxMenu.querySelector('.ctx-sub').addEventListener('click', (e) => {
+      e.stopPropagation();
+      ctxFitSub.classList.toggle('show');
+    });
+
+    container.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-arrow') || e.target.closest('.dot') || e.target.closest('.settings-btn')) return;
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.slide-url-bar')) {
+        document.querySelectorAll('.slide-url-bar.show').forEach(b => b.classList.remove('show'));
+      }
+    });
+
+    await loadFromServer();
+
+    for (let i = 1; i < savedCount; i++) {
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      slide.dataset.slide = i;
+      slide.innerHTML =
+        '<div class="slide-img-wrap">' +
+          '<img alt="" draggable="false">' +
+          '<div class="resize-handle nw"></div>' +
+          '<div class="resize-handle n"></div>' +
+          '<div class="resize-handle ne"></div>' +
+          '<div class="resize-handle e"></div>' +
+          '<div class="resize-handle se"></div>' +
+          '<div class="resize-handle s"></div>' +
+          '<div class="resize-handle sw"></div>' +
+          '<div class="resize-handle w"></div>' +
+        '</div>' +
+        '<div class="img-props" data-slide="' + i + '">' +
+          '<button data-mode="cover">Cover</button>' +
+          '<button data-mode="contain">Contain</button>' +
+          '<button data-mode="fill">Fill</button>' +
+          '<button data-mode="original">Original</button>' +
+        '</div>' +
+        '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (i + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
+        '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
+        '<span class="slide-label">Slide ' + (i + 1) + '</span>' +
+        '<span class="slide-number">' + (i + 1) + ' / ' + savedCount + '</span>';
+      container.appendChild(slide);
+      slides.push(slide);
+    }
+
+    slides.forEach(el => { setupSlideDrop(el); setupResize(el); });
+
+    createDots();
+    applyAllImages();
+    rebuildThumbnails();
+    update();
+
+    const skeletonSlide = document.getElementById('skeletonSlide');
+    if (skeletonSlide) skeletonSlide.classList.add('skeleton-hidden');
+
+    if (window.innerWidth <= 900) {
+      sidebar.classList.add('collapsed');
+    }
+  })();
+</script>
+</body>
+</html>
