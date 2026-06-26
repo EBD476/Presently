@@ -642,6 +642,8 @@
     .fullscreen .slide-img-wrap.selected .resize-handle {
       display: none !important;
     }
+    .fullscreen .slide img { -webkit-user-drag: none; user-select: none; }
+    .fullscreen .slide-img-wrap { cursor: default !important; }
 
     .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
     .resize-handle.n  { top: -6px; left: calc(50% - 6px); cursor: n-resize; }
@@ -918,7 +920,7 @@
       position: absolute;
       top: 4rem;
       right: 1.25rem;
-      background: rgba(255, 255, 255, 0.06);
+      background: #f1f1f1e3; //rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #a0a0b8;
       width: 40px;
@@ -1242,7 +1244,7 @@
     }
     .draw-canvas.active {
       pointer-events: auto;
-      cursor: crosshair;
+      cursor: default;
     }
     .draw-toolbar {
       position: absolute;
@@ -1307,11 +1309,26 @@
       min-width: 1.2rem;
       text-align: center;
     }
-    #drawToggleBtn {
+    #laserToggleBtn {
+      top: 10rem;
+    }
+    #drawToggleBtn{
+      top : 7rem;
+    }
+    
+    #drawToggleBtn, #laserToggleBtn {
       display: none;
     }
-    .fullscreen #drawToggleBtn {
+    .fullscreen #drawToggleBtn, .fullscreen #laserToggleBtn {
       display: flex;
+    }
+
+    #laserCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 49;
+      pointer-events: none;
+      touch-action: none;
     }
   </style>
 </head>
@@ -1376,8 +1393,9 @@
         <div class="skeleton-slide-line"></div>
       </div>
     </div>
+    <canvas id="laserCanvas"></canvas>
     <canvas class="draw-canvas" id="drawCanvas"></canvas>
-    <div class="draw-toolbar" id="drawToolbar">
+    <div class="draw-toolbar" id="drawToolbar"><!-- content... -->
       <span class="draw-label">Draw</span>
       <input type="color" id="drawColor" value="#ff4444">
       <input type="range" id="drawSize" min="1" max="20" value="4">
@@ -1391,6 +1409,7 @@
 
 <button class="settings-btn" id="settingsBtn" aria-label="Settings">&#9881;</button>
 <button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen">&#9974;</button>
+<button class="fullscreen-btn" id="laserToggleBtn" aria-label="Toggle laser pointer">&#9673;</button>
 <button class="fullscreen-btn" id="drawToggleBtn" aria-label="Toggle drawing">&#9998;</button>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -1635,6 +1654,7 @@
 
     function setupSlideDrop(el) {
       el.addEventListener('dragover', (e) => {
+        if (document.documentElement.classList.contains('fullscreen')) return;
         e.preventDefault();
         el.classList.add('drag-over');
       });
@@ -1644,6 +1664,7 @@
       });
 
       el.addEventListener('drop', async (e) => {
+        if (document.documentElement.classList.contains('fullscreen')) return;
         e.preventDefault();
         el.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
@@ -2072,6 +2093,7 @@
         item.addEventListener('click', () => goTo(i));
 
         item.addEventListener('dragstart', (e) => {
+          if (document.documentElement.classList.contains('fullscreen')) { e.preventDefault(); return; }
           dragSrcIndex = i;
           item.classList.add('dragging');
           e.dataTransfer.effectAllowed = 'move';
@@ -2085,6 +2107,7 @@
         });
 
         item.addEventListener('dragover', (e) => {
+          if (document.documentElement.classList.contains('fullscreen')) return;
           e.preventDefault();
           if (dragSrcIndex === null || dragSrcIndex === i) return;
 
@@ -2115,6 +2138,7 @@
         });
 
         item.addEventListener('drop', (e) => {
+          if (document.documentElement.classList.contains('fullscreen')) return;
           e.preventDefault();
           clearDropPlaceholder();
           if (dragSrcIndex !== null && dragSrcIndex !== i) {
@@ -2126,6 +2150,7 @@
       });
 
       thumbnails.addEventListener('dragover', (e) => {
+        if (document.documentElement.classList.contains('fullscreen')) return;
         if (dragSrcIndex === null) return;
         e.preventDefault();
         const children = Array.from(thumbnails.children);
@@ -2145,6 +2170,7 @@
       });
 
       thumbnails.addEventListener('drop', (e) => {
+        if (document.documentElement.classList.contains('fullscreen')) return;
         if (dragSrcIndex === null) return;
         e.preventDefault();
         const target = e.target.closest('.thumb-item');
@@ -2591,8 +2617,12 @@
       container.style.maxWidth = isFull ? 'none' : '';
       container.style.height = isFull ? '100vh' : '';
       container.style.borderRadius = isFull ? '0' : '';
-      if (!isFull && drawMode) toggleDrawMode(false);
+      if (!isFull) {
+        if (drawMode) toggleDrawMode(false);
+        if (laserMode) toggleLaserMode(false);
+      }
       if (typeof resizeDrawCanvas === 'function') setTimeout(resizeDrawCanvas, 100);
+      if (typeof resizeLaserCanvas === 'function') setTimeout(resizeLaserCanvas, 100);
     });
 
     settingsBtn.addEventListener('click', openSettings);
@@ -2662,6 +2692,11 @@
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault(); duplicateSlide(current);
+      }
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        if (!laserMode && drawMode) toggleDrawMode(false);
+        toggleLaserMode(!laserMode);
       }
       if (e.key === 'Escape') {
         if (ctxMenu.classList.contains('show')) { hideCtxMenu(); }
@@ -2966,6 +3001,7 @@
     }
 
     drawToggleBtn.addEventListener('click', () => {
+      if (!drawMode && laserMode) toggleLaserMode(false);
       toggleDrawMode(!drawMode);
     });
 
@@ -2989,8 +3025,146 @@
       drawSizeLabel.textContent = drawSizeInput.value;
     });
 
-    window.addEventListener('resize', resizeDrawCanvas);
+    // ---- Laser Pointer (beam with fading trail, draws only on mousedown) ----
+    const laserCanvas = document.getElementById('laserCanvas');
+    const laserCtx = laserCanvas.getContext('2d');
+    const laserToggleBtn = document.getElementById('laserToggleBtn');
+    let laserMode = false;
+    let laserActive = false;
+    let laserPoints = [];
+    const LASER_TRAIL_DURATION = 1500;
+    let laserRafId = null;
+
+    function resizeLaserCanvas() {
+      const rect = container.getBoundingClientRect();
+      laserCanvas.width = rect.width;
+      laserCanvas.height = rect.height;
+    }
+
+    function drawLaserTrail(now) {
+      laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+      laserPoints = laserPoints.filter(p => now - p.time < LASER_TRAIL_DURATION);
+      if (laserPoints.length < 2) {
+        if (laserPoints.length === 1) {
+          const p = laserPoints[0];
+          laserCtx.beginPath();
+          laserCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          laserCtx.fillStyle = 'rgba(255,68,68,0.9)';
+          laserCtx.fill();
+        }
+        laserRafId = requestAnimationFrame(drawLaserTrail);
+        return;
+      }
+      for (let i = 1; i < laserPoints.length; i++) {
+        const p0 = laserPoints[i - 1];
+        const p1 = laserPoints[i];
+        const age = now - p1.time;
+        const opacity = Math.max(0, 1 - age / LASER_TRAIL_DURATION);
+        const width = Math.max(1, 5 * opacity);
+        laserCtx.beginPath();
+        laserCtx.moveTo(p0.x, p0.y);
+        laserCtx.lineTo(p1.x, p1.y);
+        laserCtx.strokeStyle = `rgba(255,68,68,${opacity})`;
+        laserCtx.lineWidth = width;
+        laserCtx.stroke();
+      }
+      const last = laserPoints[laserPoints.length - 1];
+      const grad = laserCtx.createRadialGradient(last.x, last.y, 0, last.x, last.y, 12);
+      grad.addColorStop(0, 'rgba(255,68,68,0.95)');
+      grad.addColorStop(0.3, 'rgba(255,68,68,0.5)');
+      grad.addColorStop(1, 'rgba(255,68,68,0)');
+      laserCtx.beginPath();
+      laserCtx.arc(last.x, last.y, 12, 0, Math.PI * 2);
+      laserCtx.fillStyle = grad;
+      laserCtx.fill();
+      laserCtx.beginPath();
+      laserCtx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+      laserCtx.fillStyle = 'rgba(255,68,68,1)';
+      laserCtx.fill();
+
+      if (laserPoints.length > 0) {
+        laserRafId = requestAnimationFrame(drawLaserTrail);
+      } else {
+        laserRafId = null;
+      }
+    }
+
+    function toggleLaserMode(enable) {
+      laserMode = enable;
+      laserToggleBtn.style.background = laserMode ? 'rgba(99,102,241,0.3)' : '';
+      laserToggleBtn.style.borderColor = laserMode ? '#6366f1' : '';
+      document.body.style.cursor = laserMode ? 'default' : '';
+      if (laserMode) {
+        laserPoints = [];
+        resizeLaserCanvas();
+        laserRafId = requestAnimationFrame(drawLaserTrail);
+      } else {
+        laserPoints = [];
+        laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+        if (laserRafId) { cancelAnimationFrame(laserRafId); laserRafId = null; }
+      }
+    }
+
+    laserToggleBtn.addEventListener('click', () => {
+      if (!laserMode && drawMode) toggleDrawMode(false);
+      toggleLaserMode(!laserMode);
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      if (!laserMode) return;
+      laserActive = true;
+      const rect = container.getBoundingClientRect();
+      laserPoints.push({ x: e.clientX - rect.left, y: e.clientY - rect.top, time: performance.now() });
+      if (!laserRafId) laserRafId = requestAnimationFrame(drawLaserTrail);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      document.body.style.cursor = laserMode ? 'default' : '';
+      if (!laserMode || !laserActive) return;
+      const rect = container.getBoundingClientRect();
+      laserPoints.push({ x: e.clientX - rect.left, y: e.clientY - rect.top, time: performance.now() });
+      if (!laserRafId) laserRafId = requestAnimationFrame(drawLaserTrail);
+    });
+
+    document.addEventListener('mouseup', () => {
+      laserActive = false;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      if (!laserMode) return;
+      laserActive = false;
+      laserPoints = [];
+      laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+      if (laserRafId) { cancelAnimationFrame(laserRafId); laserRafId = null; }
+    });
+
+    document.addEventListener('touchstart', (e) => {
+      if (!laserMode) return;
+      laserActive = true;
+      const rect = container.getBoundingClientRect();
+      const t = e.touches[0];
+      laserPoints.push({ x: t.clientX - rect.left, y: t.clientY - rect.top, time: performance.now() });
+      if (!laserRafId) laserRafId = requestAnimationFrame(drawLaserTrail);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!laserMode || !laserActive) return;
+      const rect = container.getBoundingClientRect();
+      const t = e.touches[0];
+      laserPoints.push({ x: t.clientX - rect.left, y: t.clientY - rect.top, time: performance.now() });
+      if (!laserRafId) laserRafId = requestAnimationFrame(drawLaserTrail);
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      laserActive = false;
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      resizeDrawCanvas();
+      resizeLaserCanvas();
+    });
     resizeDrawCanvas();
+    resizeLaserCanvas();
 
     slides.forEach(el => { setupSlideDrop(el); setupResize(el); });
 
