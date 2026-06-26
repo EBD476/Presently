@@ -695,6 +695,33 @@
       color: #a5b4fc;
     }
 
+    .img-props .bg-color-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0 0.2rem;
+    }
+    .img-props .bg-color-wrap input[type="color"] {
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+      position: relative;
+    }
+    .img-props .bg-color-wrap input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .img-props .bg-color-wrap input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 50%;
+    }
+    .img-props .bg-color-wrap input[type="color"]::-moz-color-swatch {
+      border: none;
+      border-radius: 50%;
+    }
+
     .slide-url-bar {
       position: absolute;
       bottom: 70px;
@@ -1248,6 +1275,7 @@
         <button data-mode="contain">Contain</button>
         <button data-mode="fill">Fill</button>
         <button data-mode="original">Original</button>
+        <div class="bg-color-wrap"><input type="color" class="bg-color-input" value="#1a1a24" title="Background color"></div>
       </div>
       <div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number 1</div><div class="fb-label">Import image or paste from clipboard</div></div></div>
       <div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>
@@ -1356,6 +1384,7 @@
     let resizeData = {};
     let slideMode = {};
     let slideNames = {};
+    let slideBgColors = {};
     let activeResize = null;
     let undoData = null;
     let dragCandidate = null;
@@ -1379,6 +1408,7 @@
         resizeData = kv.resize || {};
         slideMode = kv.mode || {};
         slideNames = kv.names || {};
+        slideBgColors = kv.bgColors || {};
         if (kv.apiUrl) {
           apiBaseUrl = kv.apiUrl;
           localStorage.setItem('apiBaseUrl', kv.apiUrl);
@@ -1394,6 +1424,7 @@
           resize: { ...resizeData },
           mode: { ...slideMode },
           names: { ...slideNames },
+          bgColors: { ...slideBgColors },
           apiUrl: apiBaseUrl
         };
         const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)), {
@@ -1482,10 +1513,28 @@
       }
     }
 
+    function applySlideBg(el, idx) {
+      const color = slideBgColors[idx];
+      if (color) {
+        el.style.backgroundColor = color;
+      } else {
+        el.style.backgroundColor = '';
+      }
+    }
+
+    function syncColorInputs() {
+      slides.forEach((el, i) => {
+        const input = el.querySelector('.bg-color-input');
+        if (input) input.value = slideBgColors[i] || '#1a1a24';
+      });
+    }
+
     function applyAllImages() {
       slides.forEach((el, i) => {
         applySlideImage(el, slideUrls[i] || '');
+        applySlideBg(el, i);
       });
+      syncColorInputs();
     }
 
     function getSlideName(i) {
@@ -1542,6 +1591,22 @@
             saveToServer();
           });
         });
+        const colorInput = props.querySelector('.bg-color-input');
+        if (colorInput) {
+          colorInput.addEventListener('input', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(el.dataset.slide);
+            const color = e.target.value;
+            if (color && color !== '#1a1a24') {
+              slideBgColors[idx] = color;
+            } else {
+              delete slideBgColors[idx];
+            }
+            applySlideBg(el, idx);
+            saveToServer();
+            rebuildThumbnails();
+          });
+        }
       }
 
       el.addEventListener('click', (e) => {
@@ -1753,6 +1818,7 @@
       const resizeInOrder = slides.map((_, i) => resizeData[i] || null);
       const modeInOrder = slides.map((_, i) => slideMode[i] || 'contain');
       const namesInOrder = slides.map((_, i) => slideNames[i] || '');
+      const bgInOrder = slides.map((_, i) => slideBgColors[i] || '');
 
       const [moved] = slides.splice(fromIdx, 1);
       slides.splice(toIdx, 0, moved);
@@ -1769,10 +1835,14 @@
       const [movedName] = namesInOrder.splice(fromIdx, 1);
       namesInOrder.splice(toIdx, 0, movedName);
 
+      const [movedBg] = bgInOrder.splice(fromIdx, 1);
+      bgInOrder.splice(toIdx, 0, movedBg);
+
       slideUrls = {};
       resizeData = {};
       slideMode = {};
       slideNames = {};
+      slideBgColors = {};
       urlsInOrder.forEach((url, i) => {
         if (url) slideUrls[i] = url;
       });
@@ -1785,6 +1855,9 @@
       namesInOrder.forEach((n, i) => {
         if (n) slideNames[i] = n;
       });
+      bgInOrder.forEach((c, i) => {
+        if (c) slideBgColors[i] = c;
+      });
 
       slides.forEach(el => container.appendChild(el));
 
@@ -1792,6 +1865,7 @@
         el.dataset.slide = i;
         el.querySelector('.slide-label').textContent = getSlideName(i);
         applySlideImage(el, slideUrls[i] || '');
+        applySlideBg(el, i);
       });
 
       if (current === fromIdx) current = toIdx;
@@ -1818,6 +1892,9 @@
           preview.style.backgroundImage = 'url("' + resolveUrl(url).replace(/"/g, '\\"') + '")';
         } else {
           preview.innerHTML = '<span class="thumb-placeholder">&#x1F5BC;</span>';
+        }
+        if (slideBgColors[i]) {
+          preview.style.backgroundColor = slideBgColors[i];
         }
 
         const info = document.createElement('div');
@@ -2021,6 +2098,7 @@
           '<button data-mode="contain">Contain</button>' +
           '<button data-mode="fill">Fill</button>' +
           '<button data-mode="original">Original</button>' +
+          '<div class="bg-color-wrap"><input type="color" class="bg-color-input" value="#1a1a24" title="Background color"></div>' +
         '</div>' +
         '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (idx + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
         '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
@@ -2031,6 +2109,7 @@
       setupSlideDrop(slide);
       setupResize(slide);
       applySlideImage(slide, slideUrls[idx] || '');
+      applySlideBg(slide, idx);
       rebuildSlides();
       goTo(idx);
       saveToServer();
@@ -2046,6 +2125,7 @@
       delete resizeData[index];
       delete slideMode[index];
       delete slideNames[index];
+      delete slideBgColors[index];
       const reindexed = {};
       slides.forEach((_, i) => {
         if (slideUrls[i] !== undefined) reindexed[i] = slideUrls[i];
@@ -2070,6 +2150,12 @@
         else if (slideNames[i + 1] !== undefined) namesReindexed[i] = slideNames[i + 1];
       });
       slideNames = namesReindexed;
+      const bgReindexed = {};
+      slides.forEach((_, i) => {
+        if (slideBgColors[i] !== undefined) bgReindexed[i] = slideBgColors[i];
+        else if (slideBgColors[i + 1] !== undefined) bgReindexed[i] = slideBgColors[i + 1];
+      });
+      slideBgColors = bgReindexed;
       slides.forEach((el, i) => {
         el.dataset.slide = i;
         el.querySelector('.slide-label').textContent = getSlideName(i);
@@ -2101,6 +2187,7 @@
           '<button data-mode="contain">Contain</button>' +
           '<button data-mode="fill">Fill</button>' +
           '<button data-mode="original">Original</button>' +
+          '<div class="bg-color-wrap"><input type="color" class="bg-color-input" value="#1a1a24" title="Background color"></div>' +
         '</div>' +
         '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (idx + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
         '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
@@ -2114,6 +2201,7 @@
       if (resizeData[index]) resizeData[idx] = { ...resizeData[index] };
       if (slideMode[index]) slideMode[idx] = slideMode[index];
       if (slideNames[index]) slideNames[idx] = slideNames[index] + ' (Copy)';
+      if (slideBgColors[index]) slideBgColors[idx] = slideBgColors[index];
 
       slides.forEach((el, i) => {
         el.dataset.slide = i;
@@ -2123,6 +2211,7 @@
       setupSlideDrop(slide);
       setupResize(slide);
       applySlideImage(slide, slideUrls[idx] || '');
+      applySlideBg(slide, idx);
       rebuildSlides();
       goTo(idx);
       saveToServer();
@@ -2289,6 +2378,7 @@
             '<button data-mode="contain">Contain</button>' +
             '<button data-mode="fill">Fill</button>' +
             '<button data-mode="original">Original</button>' +
+            '<div class="bg-color-wrap"><input type="color" class="bg-color-input" value="#1a1a24" title="Background color"></div>' +
           '</div>' +
           '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">' + getSlideName(i) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
           '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
@@ -2649,6 +2739,7 @@
           '<button data-mode="contain">Contain</button>' +
           '<button data-mode="fill">Fill</button>' +
           '<button data-mode="original">Original</button>' +
+          '<div class="bg-color-wrap"><input type="color" class="bg-color-input" value="#1a1a24" title="Background color"></div>' +
         '</div>' +
         '<div class="fallback-msg"><div class="fallback-box"><div class="fb-num">Slide Number ' + (i + 1) + '</div><div class="fb-label">Import image or paste from clipboard</div></div></div>' +
         '<div class="slide-url-bar"><input type="text" placeholder="/api/image/..." spellcheck="false"><button>Apply</button></div>' +
