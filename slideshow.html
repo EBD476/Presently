@@ -142,19 +142,48 @@
       font-weight: 600;
     }
 
-    .sidebar-header span {
-      color: #5a5a72;
-      font-size: 0.75rem;
+    .sidebar-header #slideCount {
+      background: rgba(255,255,255,0.06);
+      color: #818cf8;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.1rem 0.4rem;
+      border-radius: 0.25rem;
+      line-height: 1.3;
     }
 
-    .deck-row input:focus,
-    .deck-row select:focus {
-      border-color: #6366f1 !important;
+    .upload-loading {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-loading.show { display: flex; }
+    .upload-loading .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: renameSpin 0.6s linear infinite;
     }
 
-    .deck-row select option {
-      background: #1c1c24;
-      color: #e2e8f0;
+    .rename-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.08);
+      border-top-color: #818cf8;
+      border-radius: 50%;
+      animation: renameSpin 0.6s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+    .rename-spinner.show { display: block; }
+    @keyframes renameSpin {
+      to { transform: rotate(360deg); }
     }
 
     .sidebar-close {
@@ -941,6 +970,7 @@
       transition: left 0.3s ease, background 0.2s;
       opacity: 1;
       pointer-events: auto;
+      padding-left: 10px;
     }
 
     .sidebar-toggle:hover {
@@ -1182,17 +1212,12 @@
 <div class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-header-left">
-      <a href="decks.html" id="decksLink" title="All Decks" style="color:#a0a0b8;text-decoration:none;font-size:0.9rem;line-height:1;margin-right:0.25rem;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a0a0b8'">&#9776;</a>
-      <h3>Slides</h3>
+      <a href="decks.html" id="decksLink" title="All Decks" style="color:#a0a0b8;text-decoration:none;font-size:0.9rem;line-height:1;margin-right:0.25rem;transition:color 0.2s;display:flex;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a0a0b8'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></a>
+      <h3 id="deckNameHeading"></h3>
+      <div class="rename-spinner" id="renameSpinner"></div>
       <span id="slideCount">1</span>
     </div>
     <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&times;</button>
-  </div>
-  <div class="deck-row" style="padding: 0.5rem 0.75rem; display: flex; gap: 0.35rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-    <input type="text" id="deckInput" placeholder="Deck name" spellcheck="false" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:0.35rem;padding:0.35rem 0.5rem;color:#e2e8f0;font-size:0.75rem;outline:none;font-family:inherit;min-width:0;">
-    <select id="deckSelect" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:0.35rem;padding:0.35rem 0.5rem;color:#e2e8f0;font-size:0.75rem;outline:none;font-family:inherit;cursor:pointer;max-width:100px;">
-      <option value="">Load</option>
-    </select>
   </div>
   <div class="sidebar-thumbnails" id="thumbnails">
     <div class="skeleton skeleton-thumb" id="skeletonThumb1"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
@@ -1394,29 +1419,35 @@
     }
 
     async function uploadImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-          const dataUrl = ev.target.result;
-          const commaIdx = dataUrl.indexOf(',');
-          const base64Data = dataUrl.substring(commaIdx + 1);
-          const header = dataUrl.substring(0, commaIdx);
-          const mime = (header.match(/:(.*?);/) || [])[1] || 'image/png';
-          try {
-            const resp = await fetch(resolveUrl('/api/upload'), {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data: base64Data, mime })
-            });
-            const result = await resp.json();
-            resolve(result.url);
-          } catch (err) {
-            reject(err);
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const loading = document.getElementById('uploadLoading');
+      loading.classList.add('show');
+      try {
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async (ev) => {
+            const dataUrl = ev.target.result;
+            const commaIdx = dataUrl.indexOf(',');
+            const base64Data = dataUrl.substring(commaIdx + 1);
+            const header = dataUrl.substring(0, commaIdx);
+            const mime = (header.match(/:(.*?);/) || [])[1] || 'image/png';
+            try {
+              const resp = await fetch(resolveUrl('/api/upload'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: base64Data, mime })
+              });
+              const result = await resp.json();
+              resolve(result.url);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      } finally {
+        loading.classList.remove('show');
+      }
     }
 
     function applySlideImage(el, url) {
@@ -2224,7 +2255,7 @@
     async function loadDeck(name) {
       deckName = name;
       localStorage.setItem('deckName', name);
-      document.getElementById('deckInput').value = name;
+      setHeading(name);
       await loadFromServer();
       while (slides.length > 1) {
         const el = slides.pop();
@@ -2274,43 +2305,87 @@
       current = 0;
     }
 
-    async function populateDeckList() {
-      try {
-        const resp = await fetch(resolveUrl('/api/decks'));
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const select = document.getElementById('deckSelect');
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">' + (data.decks && data.decks.length ? 'Switch deck...' : 'No decks') + '</option>';
-        (data.decks || []).forEach(name => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          select.appendChild(opt);
-        });
-        select.value = currentVal;
-      } catch (_) {}
+    let renameInput = null;
+
+    document.querySelector('.sidebar-header-left').addEventListener('dblclick', (e) => {
+      const heading = e.target.closest('#deckNameHeading');
+      if (!heading || renameInput) return;
+      renameInput = document.createElement('input');
+      renameInput.type = 'text';
+      renameInput.value = deckName;
+      renameInput.style.background = 'rgba(255,255,255,0.08)';
+      renameInput.style.border = '1px solid #6366f1';
+      renameInput.style.borderRadius = '0.25rem';
+      renameInput.style.color = '#e2e8f0';
+      renameInput.style.fontSize = '0.75rem';
+      renameInput.style.padding = '0.1rem 0.3rem';
+      renameInput.style.width = '100%';
+      renameInput.style.outline = 'none';
+      renameInput.style.fontFamily = 'inherit';
+      renameInput.style.fontWeight = '600';
+      renameInput.style.textTransform = 'uppercase';
+      renameInput.style.letterSpacing = '0.06em';
+      heading.replaceWith(renameInput);
+      renameInput.focus();
+      renameInput.select();
+
+      async function saveRename() {
+        const newName = renameInput.value.trim();
+        if (!newName || newName === deckName) { cancelRename(); return; }
+        renameInput.disabled = true;
+        document.getElementById('renameSpinner').classList.add('show');
+        try {
+          const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)));
+          if (!resp.ok) throw new Error('Fetch failed');
+          const data = await resp.json();
+          const kv = data.kv || {};
+          const saveResp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(newName)), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ kv })
+          });
+          if (!saveResp.ok) throw new Error('Save failed');
+          const delResp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)), { method: 'DELETE' });
+          if (!delResp.ok) throw new Error('Delete failed');
+          deckName = newName;
+          localStorage.setItem('deckName', newName);
+          setHeading(newName);
+          await loadFromServer();
+          applyAllImages();
+          rebuildThumbnails();
+          update();
+          document.getElementById('renameSpinner').classList.remove('show');
+        } catch (_) {
+          document.getElementById('renameSpinner').classList.remove('show');
+          cancelRename();
+        }
+      }
+
+      function cancelRename() {
+        setHeading(deckName);
+      }
+
+      renameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveRename(); }
+        if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+      });
+      renameInput.addEventListener('blur', saveRename);
+    });
+
+    function setHeading(text) {
+      if (renameInput) {
+        const heading = document.createElement('h3');
+        heading.id = 'deckNameHeading';
+        heading.textContent = text;
+        renameInput.replaceWith(heading);
+        renameInput = null;
+      } else {
+        const existing = document.getElementById('deckNameHeading');
+        if (existing) existing.textContent = text;
+      }
     }
 
-    const deckInput = document.getElementById('deckInput');
-    deckInput.value = deckName;
-    deckInput.addEventListener('change', () => {
-      const name = deckInput.value.trim() || 'Default';
-      loadDeck(name);
-      populateDeckList();
-    });
-    deckInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); deckInput.blur(); }
-    });
-
-    document.getElementById('deckSelect').addEventListener('change', (e) => {
-      const name = e.target.value;
-      if (!name) return;
-      loadDeck(name);
-      e.target.value = '';
-    });
-
-    populateDeckList();
+    setHeading(deckName);
 
     fullscreenBtn.addEventListener('click', () => {
       if (!document.fullscreenElement) {
@@ -2598,5 +2673,6 @@
     }
   })();
 </script>
+<div class="upload-loading" id="uploadLoading"><div class="spinner"></div></div>
 </body>
 </html>
