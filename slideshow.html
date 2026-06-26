@@ -1232,6 +1232,87 @@
       .dots { bottom: 1.5rem; }
       .modal { width: 95%; max-height: 90vh; }
     }
+
+    .draw-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      touch-action: none;
+    }
+    .draw-canvas.active {
+      pointer-events: auto;
+      cursor: crosshair;
+    }
+    .draw-toolbar {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(30, 30, 40, 0.92);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      white-space: nowrap;
+    }
+    .draw-toolbar.show {
+      display: flex;
+    }
+    .draw-toolbar input[type="color"] {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+      padding: 0;
+    }
+    .draw-toolbar input[type="range"] {
+      width: 70px;
+      cursor: pointer;
+      accent-color: #818cf8;
+      background: transparent;
+    }
+    .draw-toolbar button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #a0a0b8;
+      border-radius: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .draw-toolbar button:hover {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+    }
+    .draw-toolbar .draw-label {
+      color: #6b7280;
+      font-size: 0.75rem;
+      user-select: none;
+    }
+    .draw-toolbar .draw-size-label {
+      color: #6b7280;
+      font-size: 0.7rem;
+      min-width: 1.2rem;
+      text-align: center;
+    }
+    #drawToggleBtn {
+      display: none;
+    }
+    .fullscreen #drawToggleBtn {
+      display: flex;
+    }
   </style>
 </head>
 <body>
@@ -1295,11 +1376,22 @@
         <div class="skeleton-slide-line"></div>
       </div>
     </div>
+    <canvas class="draw-canvas" id="drawCanvas"></canvas>
+    <div class="draw-toolbar" id="drawToolbar">
+      <span class="draw-label">Draw</span>
+      <input type="color" id="drawColor" value="#ff4444">
+      <input type="range" id="drawSize" min="1" max="20" value="4">
+      <span class="draw-size-label" id="drawSizeLabel">4</span>
+      <button id="drawUndo">Undo</button>
+      <button id="drawErase">Erase</button>
+      <button id="drawToggleBtnToolbar">Done</button>
+    </div>
   </div>
 </div>
 
 <button class="settings-btn" id="settingsBtn" aria-label="Settings">&#9881;</button>
 <button class="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen">&#9974;</button>
+<button class="fullscreen-btn" id="drawToggleBtn" aria-label="Toggle drawing">&#9998;</button>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -2253,6 +2345,8 @@
 
       const items = thumbnails.querySelectorAll('.thumb-item');
       items.forEach((item, i) => item.classList.toggle('active', i === current));
+
+      if (typeof redrawDrawings === 'function') redrawDrawings();
     }
 
     function goTo(index) {
@@ -2497,6 +2591,8 @@
       container.style.maxWidth = isFull ? 'none' : '';
       container.style.height = isFull ? '100vh' : '';
       container.style.borderRadius = isFull ? '0' : '';
+      if (!isFull && drawMode) toggleDrawMode(false);
+      if (typeof resizeDrawCanvas === 'function') setTimeout(resizeDrawCanvas, 100);
     });
 
     settingsBtn.addEventListener('click', openSettings);
@@ -2749,6 +2845,153 @@
       slides.push(slide);
     }
 
+    // ---- Drawing / Annotation ----
+    const drawCanvas = document.getElementById('drawCanvas');
+    const drawCtx = drawCanvas.getContext('2d');
+    const drawToolbar = document.getElementById('drawToolbar');
+    const drawColorInput = document.getElementById('drawColor');
+    const drawSizeInput = document.getElementById('drawSize');
+    const drawSizeLabel = document.getElementById('drawSizeLabel');
+    const drawUndoBtn = document.getElementById('drawUndo');
+    const drawEraseBtn = document.getElementById('drawErase');
+    const drawToggleToolbarBtn = document.getElementById('drawToggleBtnToolbar');
+    const drawToggleBtn = document.getElementById('drawToggleBtn');
+    let drawMode = false;
+    let drawing = false;
+    let drawData = {};
+
+    function resizeDrawCanvas() {
+      const rect = container.getBoundingClientRect();
+      drawCanvas.width = rect.width;
+      drawCanvas.height = rect.height;
+      drawCtx.lineCap = 'round';
+      drawCtx.lineJoin = 'round';
+      redrawDrawings();
+    }
+
+    function redrawDrawings() {
+      if (!drawCtx || !drawCanvas) return;
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      const data = drawData[current];
+      if (!data || data.length === 0) return;
+      data.forEach(stroke => {
+        drawCtx.strokeStyle = stroke.color;
+        drawCtx.lineWidth = stroke.size;
+        drawCtx.beginPath();
+        stroke.points.forEach((p, i) => {
+          if (i === 0) drawCtx.moveTo(p.x, p.y);
+          else drawCtx.lineTo(p.x, p.y);
+        });
+        drawCtx.stroke();
+      });
+    }
+
+    function getDrawPos(e) {
+      const rect = container.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    drawCanvas.addEventListener('mousedown', (e) => {
+      if (!drawMode) return;
+      drawing = true;
+      const pos = getDrawPos(e);
+      if (!drawData[current]) drawData[current] = [];
+      drawData[current].push({ color: drawColorInput.value, size: parseInt(drawSizeInput.value), points: [pos] });
+      drawCtx.strokeStyle = drawColorInput.value;
+      drawCtx.lineWidth = parseInt(drawSizeInput.value);
+      drawCtx.beginPath();
+      drawCtx.moveTo(pos.x, pos.y);
+    });
+
+    drawCanvas.addEventListener('mousemove', (e) => {
+      if (!drawing || !drawMode) return;
+      const pos = getDrawPos(e);
+      const stroke = drawData[current][drawData[current].length - 1];
+      stroke.points.push(pos);
+      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.stroke();
+      drawCtx.beginPath();
+      drawCtx.moveTo(pos.x, pos.y);
+    });
+
+    drawCanvas.addEventListener('mouseup', () => {
+      drawing = false;
+      drawCtx.beginPath();
+    });
+    drawCanvas.addEventListener('mouseleave', () => {
+      drawing = false;
+      drawCtx.beginPath();
+    });
+
+    drawCanvas.addEventListener('touchstart', (e) => {
+      if (!drawMode) return;
+      e.preventDefault();
+      drawing = true;
+      const pos = getDrawPos(e);
+      if (!drawData[current]) drawData[current] = [];
+      drawData[current].push({ color: drawColorInput.value, size: parseInt(drawSizeInput.value), points: [pos] });
+      drawCtx.strokeStyle = drawColorInput.value;
+      drawCtx.lineWidth = parseInt(drawSizeInput.value);
+      drawCtx.beginPath();
+      drawCtx.moveTo(pos.x, pos.y);
+    }, { passive: false });
+
+    drawCanvas.addEventListener('touchmove', (e) => {
+      if (!drawing || !drawMode) return;
+      e.preventDefault();
+      const pos = getDrawPos(e);
+      const stroke = drawData[current][drawData[current].length - 1];
+      stroke.points.push(pos);
+      drawCtx.lineTo(pos.x, pos.y);
+      drawCtx.stroke();
+      drawCtx.beginPath();
+      drawCtx.moveTo(pos.x, pos.y);
+    }, { passive: false });
+
+    drawCanvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      drawing = false;
+      drawCtx.beginPath();
+    }, { passive: false });
+
+    function toggleDrawMode(enable) {
+      drawMode = enable;
+      drawCanvas.classList.toggle('active', drawMode);
+      drawToolbar.classList.toggle('show', drawMode);
+      drawToggleBtn.style.background = drawMode ? 'rgba(99,102,241,0.3)' : '';
+      drawToggleBtn.style.borderColor = drawMode ? '#6366f1' : '';
+      if (!drawMode) { drawing = false; }
+    }
+
+    drawToggleBtn.addEventListener('click', () => {
+      toggleDrawMode(!drawMode);
+    });
+
+    drawToggleToolbarBtn.addEventListener('click', () => {
+      toggleDrawMode(false);
+    });
+
+    drawEraseBtn.addEventListener('click', () => {
+      delete drawData[current];
+      redrawDrawings();
+    });
+
+    drawUndoBtn.addEventListener('click', () => {
+      if (drawData[current] && drawData[current].length > 0) {
+        drawData[current].pop();
+        redrawDrawings();
+      }
+    });
+
+    drawSizeInput.addEventListener('input', () => {
+      drawSizeLabel.textContent = drawSizeInput.value;
+    });
+
+    window.addEventListener('resize', resizeDrawCanvas);
+    resizeDrawCanvas();
+
     slides.forEach(el => { setupSlideDrop(el); setupResize(el); });
 
     createDots();
@@ -2762,6 +3005,7 @@
     if (window.innerWidth <= 900) {
       sidebar.classList.add('collapsed');
     }
+
   })();
 </script>
 <div class="upload-loading" id="uploadLoading"><div class="spinner"></div></div>
