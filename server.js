@@ -51,7 +51,7 @@ app.get('/api/decks', (req, res) => {
       for (let i = 0; i < (d.count || 1); i++) {
         if (urls[i]) { firstImage = urls[i]; break; }
       }
-      return { name, count: d.count || 1, firstImage };
+      return { name, count: d.count || 1, firstImage, lastOpened: d.lastOpened || null, modified: d.modified || null, starred: !!d.starred };
     });
     res.json({ decks: list });
   } catch (err) {
@@ -66,6 +66,8 @@ app.get('/api/data/:deckName', (req, res) => {
     const name = decodeURIComponent(req.params.deckName);
     const deck = (db.decks || {})[name];
     if (!deck) return res.json({ kv: { count: 1, urls: {}, resize: {}, mode: {}, names: {} } });
+    deck.lastOpened = new Date().toISOString();
+    saveDb(db);
     res.json({ kv: { ...deck, apiUrl: db.apiUrl || '' } });
   } catch (err) {
     console.error('GET /api/data/:deckName:', err);
@@ -94,7 +96,10 @@ app.post('/api/data/:deckName', (req, res) => {
       urls: kv.urls || {},
       resize: kv.resize || {},
       mode: kv.mode || {},
-      names: kv.names || {}
+      names: kv.names || {},
+      starred: false,
+      lastOpened: new Date().toISOString(),
+      modified: new Date().toISOString()
     };
     db.decks = decks;
     db.images = imageMap;
@@ -160,6 +165,21 @@ app.delete('/api/data', (req, res) => {
     saveDb({ kv: {}, images: {} });
     res.json({ ok: true });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/star/:deckName', (req, res) => {
+  try {
+    const db = loadDb();
+    const name = decodeURIComponent(req.params.deckName);
+    const deck = (db.decks || {})[name];
+    if (!deck) return res.status(404).json({ error: 'Deck not found' });
+    deck.starred = !deck.starred;
+    saveDb(db);
+    res.json({ ok: true, starred: deck.starred });
+  } catch (err) {
+    console.error('PATCH /api/star/:deckName:', err);
     res.status(500).json({ error: err.message });
   }
 });
