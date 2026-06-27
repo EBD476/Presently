@@ -1143,6 +1143,50 @@
       display: block;
     }
 
+    .export-section {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .export-section:last-child {
+      border-bottom: none;
+    }
+    .export-section label {
+      display: block;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    .export-btns {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .export-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+      text-align: center;
+    }
+    .export-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+    .export-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .export-btn .icon {
+      margin-right: 0.35rem;
+    }
+
     .modal-footer {
       display: flex;
       gap: 0.75rem;
@@ -2421,11 +2465,104 @@
       apiDiv.appendChild(apiInput);
       modalBody.appendChild(apiDiv);
 
+      const exportDiv = document.createElement('div');
+      exportDiv.className = 'export-section';
+      const exportLabel = document.createElement('label');
+      exportLabel.textContent = 'Export Deck';
+      exportDiv.appendChild(exportLabel);
+      const exportBtns = document.createElement('div');
+      exportBtns.className = 'export-btns';
+      const pdfBtn = document.createElement('button');
+      pdfBtn.className = 'export-btn';
+      pdfBtn.innerHTML = '<span class="icon">&#128196;</span> PDF';
+      pdfBtn.addEventListener('click', exportPDF);
+      const pptxBtn = document.createElement('button');
+      pptxBtn.className = 'export-btn';
+      pptxBtn.innerHTML = '<span class="icon">&#128202;</span> PPTX';
+      pptxBtn.addEventListener('click', exportPPTX);
+      exportBtns.appendChild(pdfBtn);
+      exportBtns.appendChild(pptxBtn);
+      exportDiv.appendChild(exportBtns);
+      modalBody.appendChild(exportDiv);
+
       modalOverlay.classList.add('open');
     }
 
     function closeSettings() {
       modalOverlay.classList.remove('open');
+    }
+
+    function loadScript(url) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
+    async function exportPDF() {
+      const btns = modalBody.querySelectorAll('.export-btn');
+      btns.forEach(b => b.disabled = true);
+      try {
+        if (typeof jspdf === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        if (typeof html2canvas === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4');
+        const pw = pdf.internal.pageSize.getWidth();
+        const ph = pdf.internal.pageSize.getHeight();
+        for (let i = 0; i < slides.length; i++) {
+          const el = slides[i];
+          el.classList.add('active');
+          if (i > 0) pdf.addPage();
+          const canvas = await html2canvas(el, {
+            backgroundColor: slideBgColors[i] || '#1a1a24',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+          el.classList.remove('active');
+          const imgData = canvas.toDataURL('image/jpeg', 0.92);
+          pdf.addImage(imgData, 'JPEG', 0, 0, pw, ph);
+        }
+        pdf.save(deckName + '.pdf');
+      } catch (err) {
+        alert('PDF export failed: ' + err.message);
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    async function exportPPTX() {
+      const btns = modalBody.querySelectorAll('.export-btn');
+      btns.forEach(b => b.disabled = true);
+      try {
+        if (typeof PptxGenJS === 'undefined') await loadScript('https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js');
+        if (typeof html2canvas === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        const pptx = new PptxGenJS();
+        pptx.defineLayout({ name: 'WIDE', width: 13.333, height: 7.5 });
+        pptx.layout = 'WIDE';
+        for (let i = 0; i < slides.length; i++) {
+          const el = slides[i];
+          el.classList.add('active');
+          const canvas = await html2canvas(el, {
+            backgroundColor: slideBgColors[i] || '#1a1a24',
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+          el.classList.remove('active');
+          const imgData = canvas.toDataURL('image/png');
+          const slide = pptx.addSlide();
+          slide.addImage({ data: imgData, x: 0, y: 0, w: 13.333, h: 7.5 });
+        }
+        pptx.writeFile({ fileName: deckName + '.pptx' });
+      } catch (err) {
+        alert('PPTX export failed: ' + err.message);
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
     }
 
     function saveSettings() {
