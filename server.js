@@ -65,7 +65,7 @@ app.get('/api/data/:deckName', (req, res) => {
     const db = loadDb();
     const name = decodeURIComponent(req.params.deckName);
     const deck = (db.decks || {})[name];
-    if (!deck) return res.json({ kv: { count: 1, urls: {}, resize: {}, mode: {}, names: {}, bgColors: {} } });
+      if (!deck) return res.json({ kv: { count: 1, urls: {}, resize: {}, mode: {}, names: {}, bgColors: {}, notes: {} } });
     deck.lastOpened = new Date().toISOString();
     saveDb(db);
     res.json({ kv: { ...deck, apiUrl: db.apiUrl || '' } });
@@ -98,6 +98,7 @@ app.post('/api/data/:deckName', (req, res) => {
       mode: kv.mode || {},
       names: kv.names || {},
       bgColors: kv.bgColors || {},
+      notes: kv.notes || {},
       starred: false,
       lastOpened: new Date().toISOString(),
       modified: new Date().toISOString()
