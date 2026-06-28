@@ -597,6 +597,35 @@
       background: rgba(255,255,255,0.06);
       margin: 0.25rem 0;
     }
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 0.65rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      animation: toastIn 0.25s ease-out;
+      max-width: 360px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .toast-error { background: #dc2626; }
+    .toast-success { background: #16a34a; }
+    .toast-info { background: #2563eb; }
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -618,12 +647,8 @@
       </div>
     </div>
     <div class="search-bar"><span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input type="text" id="searchInput" placeholder="Search decks..." spellcheck="false"></div>
-    <div class="list" id="deckList">
-      <div class="skeleton-card"></div>
-      <div class="skeleton-card"></div>
-    </div>
+    <div class="list" id="deckList"></div>
     <div class="empty" id="emptyMsg" style="display:none;">No decks yet. Create one below.</div>
-    <div class="error" id="errorMsg">Failed to load decks.</div>
     <div class="pagination" id="pagination" style="display:none;">
       <button class="page-btn" id="pagePrev" disabled>&#8249; Prev</button>
       <span class="page-info" id="pageInfo"></span>
@@ -668,7 +693,6 @@
     const SERVER = "http://localhost:3002";
     const list = document.getElementById('deckList');
     const emptyMsg = document.getElementById('emptyMsg');
-    const errorMsg = document.getElementById('errorMsg');
     const deckCount = document.getElementById('deckCount');
     const newInput = document.getElementById('newDeckInput');
     const createBtn = document.getElementById('createBtn');
@@ -680,6 +704,15 @@
     const pagePrev = document.getElementById('pagePrev');
     const pageNext = document.getElementById('pageNext');
     const pageInfo = document.getElementById('pageInfo');
+
+    function showToast(msg, type = 'error') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+    }
 
     let allDecks = [];
     let searchQuery = '';
@@ -699,6 +732,7 @@
       viewLabel.textContent = MODE_LABELS[viewMode];
       viewToggle.querySelector('.icon').innerHTML = MODE_ICONS[viewMode];
       localStorage.setItem('deckViewMode', viewMode);
+      if (list.querySelector('.skeleton-card')) showSkeletons();
     }
 
     viewToggle.addEventListener('click', () => {
@@ -842,8 +876,23 @@
       if (currentPage < totalPages) { currentPage++; renderDecks(); }
     });
 
+    function showSkeletons() {
+      const count = viewMode === 'grid' ? 6 : 4;
+      list.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const sk = document.createElement('div');
+        sk.className = 'skeleton-card';
+        list.appendChild(sk);
+      }
+      emptyMsg.style.display = 'none';
+    }
+
+    function hideSkeletons() {
+      list.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+    }
+
     async function loadDecks() {
-      errorMsg.classList.remove('show');
+      showSkeletons();
       try {
         const resp = await fetch(SERVER + '/api/decks');
         const data = await resp.json();
@@ -852,7 +901,7 @@
         renderDecks();
       } catch (_) {
         list.innerHTML = '';
-        errorMsg.classList.add('show');
+        showToast('Failed to load decks');
       }
     }
 
@@ -923,8 +972,7 @@
         sortDecks();
         renderDecks();
       } catch (_) {
-        errorMsg.textContent = 'Failed to update star.';
-        errorMsg.classList.add('show');
+        showToast('Failed to update star');
       }
     }
 
@@ -934,8 +982,7 @@
         if (!resp.ok) throw new Error('Delete failed');
         loadDecks();
       } catch (_) {
-        errorMsg.textContent = 'Failed to delete deck.';
-        errorMsg.classList.add('show');
+        showToast('Failed to delete deck');
       }
     }
 
@@ -977,8 +1024,7 @@
         hideRename();
         loadDecks();
       } catch (_) {
-        errorMsg.textContent = 'Failed to rename deck.';
-        errorMsg.classList.add('show');
+        showToast('Failed to rename deck');
         hideRename();
       }
     });
@@ -1055,12 +1101,12 @@
         if (!saveResp.ok) throw new Error('Save failed');
         loadDecks();
       } catch (_) {
-        errorMsg.textContent = 'Failed to duplicate deck.';
-        errorMsg.classList.add('show');
+        showToast('Failed to duplicate deck');
       }
     }
 
     loadDecks();
   </script>
+<div class="toast-container" id="toastContainer"></div>
 </body>
 </html>

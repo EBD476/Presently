@@ -781,6 +781,35 @@
       opacity: 0.85;
     }
 
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 0.65rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      animation: toastIn 0.25s ease-out;
+      max-width: 360px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .toast-error { background: #dc2626; }
+    .toast-success { background: #16a34a; }
+    .toast-info { background: #2563eb; }
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
     .fullscreen .img-props {
       display: none !important;
     }
@@ -1438,10 +1467,34 @@
       outline: none;
       line-height: 1.4;
       direction:rtl;
+      resize: none;
+
     }
     #presenterNotes:focus {
       border-color: #6366f1;
     }
+    
+      #presenterNotes::-webkit-scrollbar {
+      width: 12px;
+      height: 12px;
+      }
+      #presenterNotes::-webkit-scrollbar-track {
+      background: #0f1317; /* track */
+      border-radius: 8px;
+      margin: 4px 0; /* gives a little gap from the edges */
+      }
+      #presenterNotes::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2b2f36, #1b1e23); /* subtle gradient */
+      border-radius: 8px;
+      border: 3px solid #0f1317; /* creates an inset look */
+      }
+      #presenterNotes::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #3a3f47, #23262b);
+      }
+      #presenterNotes::-webkit-scrollbar-corner {
+      background: #0f1317;
+      }
+
     .presenter-timer-wrap {
       display: flex;
       flex-direction: column;
@@ -1679,6 +1732,15 @@
     const ctxMenu = document.getElementById('ctxMenu');
     const ctxFitSub = document.getElementById('ctxFitSub');
 
+    function showToast(msg, type = 'error') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+    }
+
     let ctxSlideIdx = -1;
 
     let current = 0;
@@ -1726,7 +1788,9 @@
           apiBaseUrl = kv.apiUrl;
           localStorage.setItem('apiBaseUrl', kv.apiUrl);
         }
-      } catch (_) {}
+      } catch (_) {
+        showToast('Failed to load deck data');
+      }
     }
 
     async function saveToServer() {
@@ -1751,7 +1815,9 @@
         if (result.kv && result.kv.urls) {
           slideUrls = result.kv.urls;
         }
-      } catch (_) {}
+      } catch (_) {
+          showToast('Failed to save deck');
+        }
     }
 
     function applyMode(img, idx) {
@@ -1881,7 +1947,9 @@
             saveToServer();
             rebuildThumbnails();
             update();
-          } catch (_) {}
+          } catch (_) {
+            showToast('Failed to upload dropped image');
+          }
         }
       });
     }
@@ -2878,6 +2946,7 @@
           document.getElementById('renameSpinner').classList.remove('show');
         } catch (_) {
           document.getElementById('renameSpinner').classList.remove('show');
+          showToast('Failed to rename deck');
           cancelRename();
         }
       }
@@ -2990,6 +3059,9 @@
         if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); saveSettings(); }
         return;
       }
+      const isInPresenterNotes = document.activeElement === presenterNotes;
+      const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'PageUp', 'PageDown', ' '];
+      if (isInPresenterNotes && navKeys.includes(e.key)) return;
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault(); next();
@@ -3015,8 +3087,7 @@
         togglePresenterMode(!presenterMode);
       }
       if (e.key === 'Escape') {
-        if (ctxMenu.classList.contains('show')) { hideCtxMenu(); }
-        else { e.preventDefault(); settingsBtn.click(); }
+        if (ctxMenu.classList.contains('show')) hideCtxMenu();
       }
     });
 
@@ -3049,7 +3120,9 @@
         saveToServer();
         rebuildThumbnails();
         update();
-      } catch (_) {}
+      } catch (_) {
+        showToast('Failed to paste image');
+      }
     }
 
     container.addEventListener('contextmenu', (e) => {
@@ -3610,5 +3683,6 @@
   })();
 </script>
 <div class="upload-loading" id="uploadLoading"><div class="spinner"></div></div>
+<div class="toast-container" id="toastContainer"></div>
 </body>
 </html>
