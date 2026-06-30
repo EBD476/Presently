@@ -1629,6 +1629,7 @@
       box-sizing: border-box;
       padding: 4px;
       overflow: hidden;
+      white-space: pre-wrap;
       word-break: break-word;
       z-index: 1;
     }
@@ -1988,6 +1989,7 @@
       <span class="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" id="shapeStrokeOpacity" min="0" max="1" step="0.05" value="1" style="width:48px"><label class="opacity-label" id="shapeStrokeOpacityLabel">100%</label></span>
       <span class="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" id="shapeStrokeWidth" value="2" min="0" max="20" style="width:36px"></span>
       <span class="shape-prop-group" id="shapeFontSizeGroup" style="display:none"><label>Size</label><input type="number" id="shapeFontSize" value="28" min="8" max="200" style="width:44px"></span>
+      <span class="shape-prop-group" id="shapeBgGroup" style="display:none"><label>Bg</label><input type="color" id="shapeBgColor" value="#000000"><input type="range" id="shapeBgOpacity" min="0" max="1" step="0.05" value="0" style="width:48px"><label class="opacity-label" id="shapeBgOpacityLabel">0%</label></span>
       <span class="shape-prop-group" id="shapeFontGroup" style="display:none">
         <select id="shapeFontFamily" style="width:90px">
           <option value="Poppins">Poppins</option>
@@ -2093,10 +2095,19 @@
     <div class="ctx-item" data-action="fit-fill">Fill</div>
     <div class="ctx-item" data-action="fit-original">Original</div>
   </div>
-  <div class="ctx-divider"></div>
-  <div class="ctx-item" data-action="copy">Copy Image</div>
-  <div class="ctx-item" data-action="paste">Paste Image</div>
-</div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item" data-action="copy">Copy Image URL</div>
+    <div class="ctx-item" data-action="paste">Paste Image</div>
+    <div class="ctx-item" data-action="shape-paste" id="slidePasteItem">Paste Shape</div>
+  </div>
+  <div class="ctx-menu" id="ctxShapeMenu">
+    <div class="ctx-item" data-action="shape-copy">Copy</div>
+    <div class="ctx-item" data-action="shape-cut">Cut</div>
+    <div class="ctx-item" data-action="shape-paste" id="shapePasteItem">Paste</div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item" data-action="shape-duplicate">Duplicate</div>
+    <div class="ctx-item" data-action="shape-delete">Delete</div>
+  </div>
 
 <script>
   (async function () {
@@ -2123,6 +2134,9 @@
     const confirmDelete = document.getElementById('confirmDelete');
     const ctxMenu = document.getElementById('ctxMenu');
     const ctxFitSub = document.getElementById('ctxFitSub');
+    const ctxShapeMenu = document.getElementById('ctxShapeMenu');
+    const shapePasteItem = document.getElementById('shapePasteItem');
+    const slidePasteItem = document.getElementById('slidePasteItem');
 
     function showToast(msg, type = 'error') {
       const container = document.getElementById('toastContainer');
@@ -2134,6 +2148,9 @@
     }
 
     let ctxSlideIdx = -1;
+    let ctxShapeIdx = -1;
+    let ctxShapeId = null;
+    let shapeClipboard = null;
 
     let current = 0;
     let slideUrls = {};
@@ -3484,7 +3501,7 @@
         togglePresenterMode(!presenterMode);
       }
       if (e.key === 'Escape') {
-        if (ctxMenu.classList.contains('show')) hideCtxMenu();
+        if (ctxMenu.classList.contains('show') || ctxShapeMenu.classList.contains('show')) hideCtxMenu();
       }
     });
 
@@ -3526,17 +3543,35 @@
       const slideEl = e.target.closest('.slide');
       if (!slideEl) return;
       e.preventDefault();
-      ctxSlideIdx = parseInt(slideEl.dataset.slide);
-      ctxMenu.style.left = e.clientX + 'px';
-      ctxMenu.style.top = e.clientY + 'px';
-      ctxMenu.classList.add('show');
-      ctxFitSub.classList.remove('show');
+      const shapeEl = e.target.closest('.shape');
+      if (shapeEl) {
+        const slideIdx = parseInt(slideEl.dataset.slide);
+        const shape = getShapeById(slideIdx, shapeEl.dataset.shapeId);
+        if (!shape) return;
+        selectShape(shapeEl);
+        ctxShapeIdx = slideIdx;
+        ctxShapeId = shape.id;
+        shapePasteItem.style.display = shapeClipboard ? '' : 'none';
+        ctxShapeMenu.style.left = e.clientX + 'px';
+        ctxShapeMenu.style.top = e.clientY + 'px';
+        ctxShapeMenu.classList.add('show');
+      } else {
+        ctxSlideIdx = parseInt(slideEl.dataset.slide);
+        slidePasteItem.style.display = shapeClipboard ? '' : 'none';
+        ctxMenu.style.left = e.clientX + 'px';
+        ctxMenu.style.top = e.clientY + 'px';
+        ctxMenu.classList.add('show');
+        ctxFitSub.classList.remove('show');
+      }
     });
 
     function hideCtxMenu() {
       ctxMenu.classList.remove('show');
+      ctxShapeMenu.classList.remove('show');
       ctxFitSub.classList.remove('show');
       ctxSlideIdx = -1;
+      ctxShapeIdx = -1;
+      ctxShapeId = null;
     }
 
     ctxMenu.addEventListener('click', (e) => {
@@ -3610,6 +3645,22 @@
             }
           }).catch(() => {});
           break;
+        case 'shape-paste': {
+          if (!shapeClipboard) break;
+          const newId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          const pasteShape = JSON.parse(JSON.stringify(shapeClipboard));
+          pasteShape.id = newId;
+          pasteShape.x = parseFloat(pasteShape.x) + 2 + '%';
+          pasteShape.y = parseFloat(pasteShape.y) + 2 + '%';
+          if (!slideShapes[idx]) slideShapes[idx] = [];
+          slideShapes[idx].push(pasteShape);
+          renderShapes(idx);
+          const pasteEl = slides[idx].querySelector('.shape[data-shape-id="' + newId + '"]');
+          if (pasteEl) selectShape(pasteEl);
+          saveToServer();
+          showToast('Shape pasted', 'success');
+          break;
+        }
       }
       hideCtxMenu();
     });
@@ -3621,6 +3672,62 @@
     ctxMenu.querySelector('.ctx-sub').addEventListener('click', (e) => {
       e.stopPropagation();
       ctxFitSub.classList.toggle('show');
+    });
+
+    ctxShapeMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.ctx-item');
+      if (!item) return;
+      const action = item.dataset.action;
+      const idx = ctxShapeIdx;
+      const id = ctxShapeId;
+      if (idx < 0 || idx >= slides.length || !id) { hideCtxMenu(); return; }
+      const shapes = slideShapes[idx] || [];
+      const shape = shapes.find(s => s.id === id);
+      if (!shape) { hideCtxMenu(); return; }
+      switch (action) {
+        case 'shape-copy':
+          shapeClipboard = JSON.parse(JSON.stringify(shape));
+          showToast('Shape copied', 'success');
+          break;
+        case 'shape-cut':
+          shapeClipboard = JSON.parse(JSON.stringify(shape));
+          deleteSelectedShape();
+          showToast('Shape cut', 'success');
+          break;
+        case 'shape-duplicate': {
+          const newId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          const dup = JSON.parse(JSON.stringify(shape));
+          dup.id = newId;
+          dup.x = parseFloat(dup.x) + 2 + '%';
+          dup.y = parseFloat(dup.y) + 2 + '%';
+          shapes.push(dup);
+          renderShapes(idx);
+          const el = slides[idx].querySelector('.shape[data-shape-id="' + newId + '"]');
+          if (el) selectShape(el);
+          saveToServer();
+          break;
+        }
+        case 'shape-delete':
+          deleteSelectedShape();
+          break;
+        case 'shape-paste': {
+          if (!shapeClipboard) break;
+          const newId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          const pasteShape = JSON.parse(JSON.stringify(shapeClipboard));
+          pasteShape.id = newId;
+          pasteShape.x = parseFloat(pasteShape.x) + 2 + '%';
+          pasteShape.y = parseFloat(pasteShape.y) + 2 + '%';
+          if (!slideShapes[idx]) slideShapes[idx] = [];
+          slideShapes[idx].push(pasteShape);
+          renderShapes(idx);
+          const pasteEl = slides[idx].querySelector('.shape[data-shape-id="' + newId + '"]');
+          if (pasteEl) selectShape(pasteEl);
+          saveToServer();
+          showToast('Shape pasted', 'success');
+          break;
+        }
+      }
+      hideCtxMenu();
     });
 
     container.addEventListener('click', (e) => {
@@ -4075,7 +4182,7 @@
         case 'circle': return { ...base, type: 'circle' };
         case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
         case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
-        case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr' };
+        case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0 };
         default: return { ...base, type: 'rect' };
       }
     }
@@ -4119,10 +4226,9 @@
         label.style.textDecoration = shape.textDecoration || 'none';
         label.style.fontFamily = shape.fontFamily || 'Poppins';
         label.style.textAlign = shape.textAlign || 'center';
-        label.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : shape.textAlign === 'right' ? 'flex-end' : 'center';
         label.style.direction = shape.direction || 'ltr';
-        label.style.display = 'flex';
-        el.style.background = 'transparent';
+        label.style.display = 'block';
+        el.style.background = shape.bgColor && shape.bgColor !== 'transparent' ? hexToRgba(shape.bgColor, shape.bgOpacity) : 'transparent';
         el.style.border = 'none';
         el.style.borderRadius = '0';
       } else {
@@ -4248,6 +4354,10 @@
     const shapeUnderlineBtn = document.getElementById('shapeUnderlineBtn');
     const shapeDirGroup = document.getElementById('shapeDirGroup');
     const shapeDirBtns = shapeDirGroup ? shapeDirGroup.querySelectorAll('.shape-dir-btn') : [];
+    const shapeBgGroup = document.getElementById('shapeBgGroup');
+    const shapeBgColor = document.getElementById('shapeBgColor');
+    const shapeBgOpacity = document.getElementById('shapeBgOpacity');
+    const shapeBgOpacityLabel = document.getElementById('shapeBgOpacityLabel');
 
     function showShapeProps() {
       const shape = selectedShapeEl ? getShapeById(
@@ -4272,6 +4382,11 @@
         shapeFormatGroup.style.display = '';
         shapeAlignGroup.style.display = '';
         shapeDirGroup.style.display = '';
+        shapeBgGroup.style.display = '';
+        shapeBgColor.value = (shape.bgColor && shape.bgColor !== 'transparent') ? shape.bgColor : '#000000';
+        const bgOp = shape.bgOpacity == null ? 0 : shape.bgOpacity;
+        shapeBgOpacity.value = bgOp;
+        shapeBgOpacityLabel.textContent = Math.round(bgOp * 100) + '%';
         shapeBoldBtn.classList.toggle('active', shape.fontWeight === 'bold');
         shapeItalicBtn.classList.toggle('active', shape.fontStyle === 'italic');
         shapeUnderlineBtn.classList.toggle('active', shape.textDecoration === 'underline');
@@ -4297,6 +4412,7 @@
         shapeFormatGroup.style.display = 'none';
         shapeAlignGroup.style.display = 'none';
         shapeDirGroup.style.display = 'none';
+        shapeBgGroup.style.display = 'none';
       }
       shapeRotation.value = shape.rotation || 0;
       shapeProps.classList.add('show');
@@ -4325,6 +4441,8 @@
         shape.textAlign = activeAlign ? activeAlign.dataset.align : 'center';
         const activeDir = shapeDirGroup.querySelector('.shape-dir-btn.active');
         shape.direction = activeDir ? activeDir.dataset.dir : 'ltr';
+        shape.bgColor = shapeBgColor.value;
+        shape.bgOpacity = parseFloat(shapeBgOpacity.value) || 0;
       } else {
         shape.fill = shapeFill.value;
         shape.fillOpacity = parseFloat(shapeFillOpacity.value) || 0;
@@ -4351,6 +4469,11 @@
     shapeStrokeWidth.addEventListener('input', updateShapeFromProps);
     shapeFontSize.addEventListener('input', updateShapeFromProps);
     shapeFontFamily.addEventListener('change', updateShapeFromProps);
+    shapeBgColor.addEventListener('input', updateShapeFromProps);
+    shapeBgOpacity.addEventListener('input', () => {
+      shapeBgOpacityLabel.textContent = Math.round(parseFloat(shapeBgOpacity.value) * 100) + '%';
+      updateShapeFromProps();
+    });
     shapeRotation.addEventListener('input', updateShapeFromProps);
     shapeDelBtn.addEventListener('click', deleteSelectedShape);
 
