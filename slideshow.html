@@ -1859,7 +1859,29 @@
       line-height: 1;
       letter-spacing: -1px;
     }
-    .shape-props .shape-align-btn.active {
+    .shape-props .shape-align-btn.active,
+    .shape-props .shape-format-btn.active {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+    .shape-props .shape-format-btn {
+      padding: 0.15rem 0.25rem;
+      font-size: 0.7rem;
+      line-height: 1;
+      min-width: 22px;
+      text-align: center;
+    }
+    .shape-props .shape-format-btn.bold { font-weight: 700; }
+    .shape-props .shape-format-btn.italic { font-style: italic; font-family: serif; }
+    .shape-props .shape-format-btn.underline { text-decoration: underline; }
+    .shape-props .shape-dir-btn {
+      padding: 0.15rem 0.25rem;
+      font-size: 0.55rem;
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+    .shape-props .shape-dir-btn.active {
       background: #6366f1;
       color: #fff;
       border-color: #6366f1;
@@ -1979,10 +2001,19 @@
           <option value="Arial">Arial</option>
         </select>
       </span>
+      <span class="shape-prop-group" id="shapeFormatGroup" style="display:none">
+        <button class="shape-format-btn bold" id="shapeBoldBtn" title="Bold"><strong>B</strong></button>
+        <button class="shape-format-btn italic" id="shapeItalicBtn" title="Italic"><em>I</em></button>
+        <button class="shape-format-btn underline" id="shapeUnderlineBtn" title="Underline"><u>U</u></button>
+      </span>
       <span class="shape-prop-group" id="shapeAlignGroup" style="display:none">
         <button class="shape-align-btn" data-align="left" title="Align left">L</button>
         <button class="shape-align-btn" data-align="center" title="Align center">C</button>
         <button class="shape-align-btn" data-align="right" title="Align right">R</button>
+      </span>
+      <span class="shape-prop-group" id="shapeDirGroup" style="display:none">
+        <button class="shape-dir-btn" data-dir="ltr" title="Left to right">LTR</button>
+        <button class="shape-dir-btn" data-dir="rtl" title="Right to left">RTL</button>
       </span>
       <span class="shape-prop-group"><label>Rot</label><input type="number" id="shapeRotation" value="0" min="-360" max="360" style="width:44px"></span>
       <button id="shapeZFrontBtn" class="shape-z-btn" title="Bring to front">&#9650;</button>
@@ -4044,7 +4075,7 @@
         case 'circle': return { ...base, type: 'circle' };
         case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
         case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
-        case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', textAlign: 'center' };
+        case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr' };
         default: return { ...base, type: 'rect' };
       }
     }
@@ -4078,16 +4109,18 @@
         if (!label) {
           label = document.createElement('div');
           label.className = 'shape-label';
-          label.contentEditable = true;
           el.appendChild(label);
         }
         label.textContent = shape.text || 'Text';
         label.style.color = shape.color || '#ffffff';
         label.style.fontSize = (shape.fontSize || 28) + 'px';
         label.style.fontWeight = shape.fontWeight || '400';
+        label.style.fontStyle = shape.fontStyle || 'normal';
+        label.style.textDecoration = shape.textDecoration || 'none';
         label.style.fontFamily = shape.fontFamily || 'Poppins';
         label.style.textAlign = shape.textAlign || 'center';
         label.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : shape.textAlign === 'right' ? 'flex-end' : 'center';
+        label.style.direction = shape.direction || 'ltr';
         label.style.display = 'flex';
         el.style.background = 'transparent';
         el.style.border = 'none';
@@ -4209,6 +4242,12 @@
     const shapeFontGroup = document.getElementById('shapeFontGroup');
     const shapeAlignGroup = document.getElementById('shapeAlignGroup');
     const shapeAlignBtns = shapeAlignGroup ? shapeAlignGroup.querySelectorAll('.shape-align-btn') : [];
+    const shapeFormatGroup = document.getElementById('shapeFormatGroup');
+    const shapeBoldBtn = document.getElementById('shapeBoldBtn');
+    const shapeItalicBtn = document.getElementById('shapeItalicBtn');
+    const shapeUnderlineBtn = document.getElementById('shapeUnderlineBtn');
+    const shapeDirGroup = document.getElementById('shapeDirGroup');
+    const shapeDirBtns = shapeDirGroup ? shapeDirGroup.querySelectorAll('.shape-dir-btn') : [];
 
     function showShapeProps() {
       const shape = selectedShapeEl ? getShapeById(
@@ -4230,9 +4269,16 @@
         strokeOpGrp.style.display = 'none';
         shapeFontSizeGroup.style.display = '';
         shapeFontGroup.style.display = '';
+        shapeFormatGroup.style.display = '';
         shapeAlignGroup.style.display = '';
+        shapeDirGroup.style.display = '';
+        shapeBoldBtn.classList.toggle('active', shape.fontWeight === 'bold');
+        shapeItalicBtn.classList.toggle('active', shape.fontStyle === 'italic');
+        shapeUnderlineBtn.classList.toggle('active', shape.textDecoration === 'underline');
         const align = shape.textAlign || 'center';
         shapeAlignBtns.forEach(b => b.classList.toggle('active', b.dataset.align === align));
+        const dir = shape.direction || 'ltr';
+        shapeDirBtns.forEach(b => b.classList.toggle('active', b.dataset.dir === dir));
       } else {
         const isLine = shape.type === 'line' || shape.type === 'arrow';
         shapeFill.value = (shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none') ? shape.fill : '#6366f1';
@@ -4248,7 +4294,9 @@
         strokeOpGrp.style.display = '';
         shapeFontSizeGroup.style.display = 'none';
         shapeFontGroup.style.display = 'none';
+        shapeFormatGroup.style.display = 'none';
         shapeAlignGroup.style.display = 'none';
+        shapeDirGroup.style.display = 'none';
       }
       shapeRotation.value = shape.rotation || 0;
       shapeProps.classList.add('show');
@@ -4270,8 +4318,13 @@
         shape.color = shapeFill.value;
         shape.fontSize = parseInt(shapeFontSize.value) || 28;
         shape.fontFamily = shapeFontFamily.value || 'Poppins';
+        shape.fontWeight = shapeBoldBtn.classList.contains('active') ? 'bold' : '400';
+        shape.fontStyle = shapeItalicBtn.classList.contains('active') ? 'italic' : 'normal';
+        shape.textDecoration = shapeUnderlineBtn.classList.contains('active') ? 'underline' : 'none';
         const activeAlign = shapeAlignGroup.querySelector('.shape-align-btn.active');
         shape.textAlign = activeAlign ? activeAlign.dataset.align : 'center';
+        const activeDir = shapeDirGroup.querySelector('.shape-dir-btn.active');
+        shape.direction = activeDir ? activeDir.dataset.dir : 'ltr';
       } else {
         shape.fill = shapeFill.value;
         shape.fillOpacity = parseFloat(shapeFillOpacity.value) || 0;
@@ -4334,6 +4387,21 @@
       });
     });
 
+    [shapeBoldBtn, shapeItalicBtn, shapeUnderlineBtn].forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        updateShapeFromProps();
+      });
+    });
+
+    shapeDirBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        shapeDirBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateShapeFromProps();
+      });
+    });
+
     // Container-level delegation for shape mouse events
     container.addEventListener('mousedown', (e) => {
       const shapeEl = e.target.closest('.shape');
@@ -4390,8 +4458,10 @@
       selectShape(shapeEl);
       e.stopPropagation();
 
-      // For text shapes, don't start drag on body click (let contentEditable work)
-      if (shape.type === 'text') return;
+      if (shape.type === 'text') {
+        const lbl = shapeEl.querySelector('.shape-label');
+        if (lbl && lbl.contentEditable === 'true') return;
+      }
 
       const rect = shapeEl.getBoundingClientRect();
       const cr = shapeEl.closest('.slide').getBoundingClientRect();
@@ -4421,7 +4491,17 @@
 
       if (shape.type === 'text') {
         const lbl = shapeEl.querySelector('.shape-label');
-        if (lbl) lbl.focus();
+        if (!lbl) return;
+        lbl.contentEditable = true;
+        lbl.focus();
+        if (!lbl._textInputSetup) {
+          lbl.addEventListener('blur', function() {
+            this.contentEditable = false;
+            shape.text = this.textContent || '';
+            saveToServer();
+          });
+          lbl._textInputSetup = true;
+        }
         return;
       }
 
