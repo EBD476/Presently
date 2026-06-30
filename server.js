@@ -99,6 +99,7 @@ app.post('/api/data/:deckName', (req, res) => {
       names: kv.names || {},
       bgColors: kv.bgColors || {},
       notes: kv.notes || {},
+      shapes: kv.shapes || {},
       starred: false,
       lastOpened: new Date().toISOString(),
       modified: new Date().toISOString()

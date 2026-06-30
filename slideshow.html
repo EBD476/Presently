@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Vazirmatn:wght@400;500;600;700&family=Lalezar&family=Markazi+Text:wght@400;500;600;700&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"> 
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto:wght@400;500;700&family=Vazirmatn:wght@400;500;600;700&family=Lalezar&family=Markazi+Text:wght@400;500;600;700&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"> 
   <title>Slide Show</title>
   <style>
     @keyframes shimmer {
@@ -1563,6 +1563,327 @@
       color: #6b7280;
       text-align: center;
     }
+    /* ---- Shapes ---- */
+    .shape {
+      position: absolute;
+      z-index: 6;
+      pointer-events: none;
+    }
+    .slide.active .shape {
+      pointer-events: auto;
+    }
+    .shape.selected {
+      outline: 2px solid #6366f1;
+      outline-offset: 0px;
+    }
+    .shape.selected .resize-handle {
+      display: block;
+    }
+    .fullscreen .shape.selected { outline: none; }
+    .fullscreen .shape.selected .resize-handle { display: none !important; }
+    .fullscreen .rot-handle { display: none !important; }
+
+    .rot-handle {
+      position: absolute;
+      top: -32px;
+      left: calc(50% - 7px);
+      width: 14px;
+      height: 14px;
+      border: 2px solid #6366f1;
+      border-radius: 50%;
+      background: #fff;
+      cursor: grab;
+      z-index: 11;
+      display: none;
+    }
+    .rot-handle::before {
+      content: '';
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 18px;
+      background: #6366f1;
+    }
+    .shape.selected .rot-handle {
+      display: block;
+    }
+    .rot-handle:active {
+      cursor: grabbing;
+    }
+
+    .shape-rect {
+      border-style: solid;
+    }
+    .shape-label {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      background: transparent;
+      outline: none;
+      border: none;
+      box-sizing: border-box;
+      padding: 4px;
+      overflow: hidden;
+      word-break: break-word;
+      z-index: 1;
+    }
+    .shape-label[contenteditable="true"] {
+      pointer-events: auto;
+      cursor: text;
+    }
+    .shape-circle {
+      border-style: solid;
+      border-radius: 50%;
+    }
+    .shape-line {
+      border-style: solid;
+      border-radius: 0;
+      min-width: 20px;
+      transform-origin: center center;
+    }
+    .shape-arrow {
+      border-style: solid;
+      border-radius: 0;
+      min-width: 40px;
+      transform-origin: center center;
+    }
+    .shape-arrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 12px solid currentColor;
+    }
+    .shape-text {
+      min-width: 40px;
+      min-height: 24px;
+      cursor: text;
+      overflow: visible;
+      background: transparent;
+      border: none;
+    }
+    .shape-text.selected {
+      outline: 2px solid #6366f1;
+    }
+    .shape-text:focus {
+      outline: 2px solid #6366f1;
+      cursor: text;
+    }
+    .shape-text .resize-handle {
+      display: none;
+    }
+    .shape-text.selected .resize-handle {
+      display: block;
+    }
+
+    /* ---- Float shape button & popup panel ---- */
+    #shapeFloatBtn {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      z-index: 40;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #6366f1;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+      transition: background 0.2s, transform 0.2s;
+      font-family: inherit;
+      line-height: 1;
+      padding: 0;
+    }
+    #shapeFloatBtn:hover {
+      background: #5558e6;
+      transform: scale(1.05);
+    }
+    .fullscreen #shapeFloatBtn { display: none; }
+    .shape-popup {
+      position: absolute;
+      bottom: 3.6rem;
+      right: 0.5rem;
+      z-index: 41;
+      background: rgba(28,28,36,0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.75rem;
+      padding: 0.4rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.25rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .shape-popup.show {
+      display: flex;
+    }
+    .shape-popup-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.4rem;
+      border: none;
+      background: transparent;
+      color: #c0c0d0;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .shape-popup-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+    }
+    .shape-popup-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+    .fullscreen .shape-popup { display: none !important; }
+
+    /* ---- Shape properties panel ---- */
+    .shape-props {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      z-index: 30;
+      display: none;
+      gap: 0.35rem;
+      align-items: center;
+      background: rgba(28, 28, 36, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .shape-props.show {
+      display: flex;
+    }
+    .shape-props label {
+      color: #6b7280;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .shape-props input[type="color"] {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+      background: none;
+    }
+    .shape-props input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .shape-props input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+    .shape-props input[type="number"] {
+      width: 48px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.3rem;
+      padding: 0.15rem 0.3rem;
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .shape-props input[type="number"]:focus { border-color: #6366f1; }
+    .shape-props select {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.3rem;
+      padding: 0.15rem 0.3rem;
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+    }
+    .shape-props select:focus { border-color: #6366f1; }
+    .shape-props button {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #a0a0b8;
+      border-radius: 0.4rem;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+    .shape-props button:hover {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+    }
+    .shape-props .shape-del-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+    .shape-props .shape-z-btn {
+      padding: 0.25rem 0.35rem;
+      font-size: 0.6rem;
+      line-height: 1;
+    }
+    .shape-props .shape-z-btn:hover {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+    .shape-props .shape-align-btn {
+      padding: 0.15rem 0.3rem;
+      font-size: 0.75rem;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .shape-props .shape-align-btn.active {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+    .shape-props input[type="range"] {
+      width: 50px;
+      cursor: pointer;
+      accent-color: #818cf8;
+      background: transparent;
+    }
+    .fullscreen .shape-props {
+      display: none !important;
+    }
+    .shape-prop-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .opacity-label {
+      min-width: 2.2rem;
+      text-align: center;
+      font-size: 0.65rem;
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
@@ -1636,6 +1957,46 @@
       <button id="drawUndo">Undo</button>
       <button id="drawErase">Erase</button>
       <button id="drawToggleBtnToolbar">Done</button>
+    </div>
+
+    <div class="shape-props" id="shapeProps">
+      <span class="shape-prop-group"><label>Fill</label><input type="color" id="shapeFill" value="#6366f1"></span>
+      <span class="shape-prop-group" id="shapeFillOpacityGroup"><input type="range" id="shapeFillOpacity" min="0" max="1" step="0.05" value="1" style="width:48px"><label class="opacity-label" id="shapeFillOpacityLabel">100%</label></span>
+      <span class="shape-prop-group" id="shapeStrokeGroup"><label>Stroke</label><input type="color" id="shapeStroke" value="#ffffff"></span>
+      <span class="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" id="shapeStrokeOpacity" min="0" max="1" step="0.05" value="1" style="width:48px"><label class="opacity-label" id="shapeStrokeOpacityLabel">100%</label></span>
+      <span class="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" id="shapeStrokeWidth" value="2" min="0" max="20" style="width:36px"></span>
+      <span class="shape-prop-group" id="shapeFontSizeGroup" style="display:none"><label>Size</label><input type="number" id="shapeFontSize" value="28" min="8" max="200" style="width:44px"></span>
+      <span class="shape-prop-group" id="shapeFontGroup" style="display:none">
+        <select id="shapeFontFamily" style="width:90px">
+          <option value="Poppins">Poppins</option>
+          <option value="Roboto">Roboto</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Vazirmatn">Vazirmatn</option>
+          <option value="Lalezar">Lalezar</option>
+          <option value="Readex Pro">Readex Pro</option>
+          <option value="Markazi Text">Markazi Text</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Arial">Arial</option>
+        </select>
+      </span>
+      <span class="shape-prop-group" id="shapeAlignGroup" style="display:none">
+        <button class="shape-align-btn" data-align="left" title="Align left">L</button>
+        <button class="shape-align-btn" data-align="center" title="Align center">C</button>
+        <button class="shape-align-btn" data-align="right" title="Align right">R</button>
+      </span>
+      <span class="shape-prop-group"><label>Rot</label><input type="number" id="shapeRotation" value="0" min="-360" max="360" style="width:44px"></span>
+      <button id="shapeZFrontBtn" class="shape-z-btn" title="Bring to front">&#9650;</button>
+      <button id="shapeZBackBtn" class="shape-z-btn" title="Send to back">&#9660;</button>
+      <button id="shapeDelBtn" class="shape-del-btn" title="Delete shape">&#10005;</button>
+    </div>
+
+    <button id="shapeFloatBtn" title="Add shape">+</button>
+    <div class="shape-popup" id="shapePopup">
+      <button class="shape-popup-btn" data-shape="rect"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/></svg> Rectangle</button>
+      <button class="shape-popup-btn" data-shape="circle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg> Circle</button>
+      <button class="shape-popup-btn" data-shape="line"><svg viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3"/></svg> Line</button>
+      <button class="shape-popup-btn" data-shape="arrow"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="19" y2="12"/><polyline points="14 7 19 12 14 17"/></svg> Arrow</button>
+      <button class="shape-popup-btn" data-shape="text"><svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> Text</button>
     </div>
 
     <div id="presenterPanel">
@@ -3060,8 +3421,12 @@
         return;
       }
       const isInPresenterNotes = document.activeElement === presenterNotes;
+      const isContentEditable = document.activeElement && document.activeElement.isContentEditable;
       const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'PageUp', 'PageDown', ' '];
       if (isInPresenterNotes && navKeys.includes(e.key)) return;
+      if (isContentEditable) {
+        if (navKeys.includes(e.key) || e.key === 'Delete' || e.key === 'Backspace') return;
+      }
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault(); next();
@@ -3069,6 +3434,7 @@
       if (e.key === 'Home') { e.preventDefault(); goTo(0); }
       if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedShapeEl) { e.preventDefault(); deleteSelectedShape(); return; }
         if (getSelectedImgIdx() >= 0) { e.preventDefault(); deleteSelectedImage(); }
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
@@ -3666,11 +4032,662 @@
     resizeDrawCanvas();
     resizeLaserCanvas();
 
+    // ---- Shapes ----
+    let slideShapes = {};
+    let selectedShapeEl = null;
+    let shapeDragState = null;
+
+    function getDefaultShape(type) {
+      const base = { x: '25%', y: '20%', w: '20%', h: '20%', rotation: 0, fill: 'transparent', stroke: '#6366f1', strokeWidth: 2, fillOpacity: 1, strokeOpacity: 1, text: '', fontSize: 14, color: '#ffffff', fontFamily: 'Poppins', textAlign: 'center' };
+      switch (type) {
+        case 'rect': return { ...base, type: 'rect' };
+        case 'circle': return { ...base, type: 'circle' };
+        case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
+        case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
+        case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', textAlign: 'center' };
+        default: return { ...base, type: 'rect' };
+      }
+    }
+
+    function hexToRgba(hex, opacity) {
+      if (!hex || hex === 'transparent' || hex === 'none') return hex;
+      const r = parseInt(hex.slice(1,3), 16);
+      const g = parseInt(hex.slice(3,5), 16);
+      const b = parseInt(hex.slice(5,7), 16);
+      return 'rgba(' + r + ',' + g + ',' + b + ',' + (opacity == null ? 1 : opacity) + ')';
+    }
+
+    function styleShapeEl(el, shape) {
+      el.style.left = shape.x;
+      el.style.top = shape.y;
+      el.style.width = shape.w;
+      el.style.height = shape.h;
+      el.style.transform = shape.rotation ? 'rotate(' + shape.rotation + 'deg)' : '';
+      if (shape.type === 'rect' || shape.type === 'circle') {
+        el.style.background = shape.fill && shape.fill !== 'transparent' ? hexToRgba(shape.fill, shape.fillOpacity) : 'transparent';
+        el.style.borderColor = shape.stroke && shape.stroke !== 'transparent' ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent';
+        el.style.borderWidth = (shape.strokeWidth || 0) + 'px';
+        el.style.borderRadius = shape.type === 'circle' ? '50%' : '0';
+      } else if (shape.type === 'line' || shape.type === 'arrow') {
+        el.style.background = shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent';
+        el.style.border = 'none';
+        el.style.borderRadius = '0';
+        if (shape.type === 'arrow') el.style.color = shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent';
+      } else if (shape.type === 'text') {
+        let label = el.querySelector('.shape-label');
+        if (!label) {
+          label = document.createElement('div');
+          label.className = 'shape-label';
+          label.contentEditable = true;
+          el.appendChild(label);
+        }
+        label.textContent = shape.text || 'Text';
+        label.style.color = shape.color || '#ffffff';
+        label.style.fontSize = (shape.fontSize || 28) + 'px';
+        label.style.fontWeight = shape.fontWeight || '400';
+        label.style.fontFamily = shape.fontFamily || 'Poppins';
+        label.style.textAlign = shape.textAlign || 'center';
+        label.style.justifyContent = shape.textAlign === 'left' ? 'flex-start' : shape.textAlign === 'right' ? 'flex-end' : 'center';
+        label.style.display = 'flex';
+        el.style.background = 'transparent';
+        el.style.border = 'none';
+        el.style.borderRadius = '0';
+      } else {
+        // Non-text shape label
+        let label = el.querySelector('.shape-label');
+        if (shape.text) {
+          if (!label) {
+            label = document.createElement('div');
+            label.className = 'shape-label';
+            el.appendChild(label);
+          }
+          label.textContent = shape.text;
+          label.style.color = shape.color || '#ffffff';
+          label.style.fontSize = (shape.fontSize || 14) + 'px';
+          label.style.fontFamily = shape.fontFamily || 'Poppins';
+          label.style.textAlign = shape.textAlign || 'center';
+          label.style.display = 'flex';
+        } else if (label) {
+          label.remove();
+        }
+      }
+    }
+
+    function createShapeEl(shape) {
+      const el = document.createElement('div');
+      el.className = 'shape shape-' + shape.type;
+      el.dataset.shapeId = shape.id;
+      styleShapeEl(el, shape);
+      if (shape.type === 'text') {
+        el.spellcheck = false;
+      }
+      ['nw','n','ne','e','se','s','sw','w'].forEach(dir => {
+        const h = document.createElement('div');
+        h.className = 'resize-handle ' + dir;
+        el.appendChild(h);
+      });
+      const rotH = document.createElement('div');
+      rotH.className = 'rot-handle';
+      el.appendChild(rotH);
+      return el;
+    }
+
+    function renderShapes(slideIdx) {
+      const slideEl = slides[slideIdx];
+      if (!slideEl) return;
+      slideEl.querySelectorAll('.shape').forEach(el => {
+        if (selectedShapeEl === el) selectedShapeEl = null;
+        el.remove();
+      });
+      const shapes = slideShapes[slideIdx] || [];
+      shapes.forEach(shape => {
+        const el = createShapeEl(shape);
+        slideEl.appendChild(el);
+      });
+    }
+
+    function renderAllShapes() {
+      slides.forEach((_, i) => renderShapes(i));
+    }
+
+    function addShapeToSlide(type) {
+      if (!slideShapes[current]) slideShapes[current] = [];
+      const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const shape = { id, ...getDefaultShape(type) };
+      slideShapes[current].push(shape);
+      renderShapes(current);
+      const el = slides[current].querySelector('.shape[data-shape-id="' + id + '"]');
+      if (el) selectShape(el);
+      saveToServer();
+    }
+
+    function deleteSelectedShape() {
+      if (!selectedShapeEl) return;
+      const idx = parseInt(selectedShapeEl.closest('.slide').dataset.slide);
+      const id = selectedShapeEl.dataset.shapeId;
+      slideShapes[idx] = (slideShapes[idx] || []).filter(s => s.id !== id);
+      selectedShapeEl.remove();
+      selectedShapeEl = null;
+      hideShapeProps();
+      saveToServer();
+    }
+
+    function getShapeById(slideIdx, id) {
+      return (slideShapes[slideIdx] || []).find(s => s.id === id);
+    }
+
+    function selectShape(el) {
+      if (selectedShapeEl === el) return;
+      slides.forEach(s => {
+        s.querySelectorAll('.shape.selected').forEach(sh => sh.classList.remove('selected'));
+        const wrap = s.querySelector('.slide-img-wrap');
+        if (wrap) wrap.classList.remove('selected');
+      });
+      if (el) {
+        el.classList.add('selected');
+        selectedShapeEl = el;
+        showShapeProps();
+      } else {
+        selectedShapeEl = null;
+        hideShapeProps();
+      }
+    }
+
+    const shapeProps = document.getElementById('shapeProps');
+    const shapeFill = document.getElementById('shapeFill');
+    const shapeFillOpacity = document.getElementById('shapeFillOpacity');
+    const shapeFillOpacityLabel = document.getElementById('shapeFillOpacityLabel');
+    const shapeStroke = document.getElementById('shapeStroke');
+    const shapeStrokeOpacity = document.getElementById('shapeStrokeOpacity');
+    const shapeStrokeOpacityLabel = document.getElementById('shapeStrokeOpacityLabel');
+    const shapeStrokeWidth = document.getElementById('shapeStrokeWidth');
+    const shapeRotation = document.getElementById('shapeRotation');
+    const shapeDelBtn = document.getElementById('shapeDelBtn');
+    const shapeFontSize = document.getElementById('shapeFontSize');
+    const shapeFontFamily = document.getElementById('shapeFontFamily');
+    const shapeFontSizeGroup = document.getElementById('shapeFontSizeGroup');
+    const shapeFontGroup = document.getElementById('shapeFontGroup');
+    const shapeAlignGroup = document.getElementById('shapeAlignGroup');
+    const shapeAlignBtns = shapeAlignGroup ? shapeAlignGroup.querySelectorAll('.shape-align-btn') : [];
+
+    function showShapeProps() {
+      const shape = selectedShapeEl ? getShapeById(
+        parseInt(selectedShapeEl.closest('.slide').dataset.slide),
+        selectedShapeEl.dataset.shapeId
+      ) : null;
+      if (!shape) return;
+      const strokeGrp = document.getElementById('shapeStrokeGroup');
+      const swGrp = document.getElementById('shapeStrokeWidthGroup');
+      const fillOpGrp = document.getElementById('shapeFillOpacityGroup');
+      const strokeOpGrp = document.getElementById('shapeStrokeOpacityGroup');
+      if (shape.type === 'text') {
+        shapeFill.value = shape.color || '#ffffff';
+        shapeFontSize.value = shape.fontSize || 28;
+        shapeFontFamily.value = shape.fontFamily || 'Poppins';
+        strokeGrp.style.display = 'none';
+        swGrp.style.display = 'none';
+        fillOpGrp.style.display = 'none';
+        strokeOpGrp.style.display = 'none';
+        shapeFontSizeGroup.style.display = '';
+        shapeFontGroup.style.display = '';
+        shapeAlignGroup.style.display = '';
+        const align = shape.textAlign || 'center';
+        shapeAlignBtns.forEach(b => b.classList.toggle('active', b.dataset.align === align));
+      } else {
+        const isLine = shape.type === 'line' || shape.type === 'arrow';
+        shapeFill.value = (shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none') ? shape.fill : '#6366f1';
+        shapeFillOpacity.value = shape.fillOpacity == null ? 1 : shape.fillOpacity;
+        shapeFillOpacityLabel.textContent = Math.round((shape.fillOpacity == null ? 1 : shape.fillOpacity) * 100) + '%';
+        shapeStroke.value = (shape.stroke && shape.stroke !== 'transparent') ? shape.stroke : '#ffffff';
+        shapeStrokeOpacity.value = shape.strokeOpacity == null ? 1 : shape.strokeOpacity;
+        shapeStrokeOpacityLabel.textContent = Math.round((shape.strokeOpacity == null ? 1 : shape.strokeOpacity) * 100) + '%';
+        shapeStrokeWidth.value = shape.strokeWidth || 2;
+        strokeGrp.style.display = '';
+        swGrp.style.display = '';
+        fillOpGrp.style.display = isLine ? 'none' : '';
+        strokeOpGrp.style.display = '';
+        shapeFontSizeGroup.style.display = 'none';
+        shapeFontGroup.style.display = 'none';
+        shapeAlignGroup.style.display = 'none';
+      }
+      shapeRotation.value = shape.rotation || 0;
+      shapeProps.classList.add('show');
+    }
+
+    function hideShapeProps() {
+      shapeProps.classList.remove('show');
+    }
+
+    function updateShapeFromProps() {
+      if (!selectedShapeEl) return;
+      const slideIdx = parseInt(selectedShapeEl.closest('.slide').dataset.slide);
+      const id = selectedShapeEl.dataset.shapeId;
+      const shapes = slideShapes[slideIdx] || [];
+      const i = shapes.findIndex(s => s.id === id);
+      if (i < 0) return;
+      const shape = shapes[i];
+      if (shape.type === 'text') {
+        shape.color = shapeFill.value;
+        shape.fontSize = parseInt(shapeFontSize.value) || 28;
+        shape.fontFamily = shapeFontFamily.value || 'Poppins';
+        const activeAlign = shapeAlignGroup.querySelector('.shape-align-btn.active');
+        shape.textAlign = activeAlign ? activeAlign.dataset.align : 'center';
+      } else {
+        shape.fill = shapeFill.value;
+        shape.fillOpacity = parseFloat(shapeFillOpacity.value) || 0;
+        shape.stroke = shapeStroke.value;
+        shape.strokeOpacity = parseFloat(shapeStrokeOpacity.value) || 0;
+        shape.strokeWidth = parseFloat(shapeStrokeWidth.value) || 0;
+      }
+      shape.rotation = parseFloat(shapeRotation.value) || 0;
+      styleShapeEl(selectedShapeEl, shape);
+      clearTimeout(textSaveTimer);
+      textSaveTimer = setTimeout(saveToServer, 300);
+    }
+
+    shapeFill.addEventListener('input', updateShapeFromProps);
+    shapeFillOpacity.addEventListener('input', () => {
+      shapeFillOpacityLabel.textContent = Math.round(parseFloat(shapeFillOpacity.value) * 100) + '%';
+      updateShapeFromProps();
+    });
+    shapeStroke.addEventListener('input', updateShapeFromProps);
+    shapeStrokeOpacity.addEventListener('input', () => {
+      shapeStrokeOpacityLabel.textContent = Math.round(parseFloat(shapeStrokeOpacity.value) * 100) + '%';
+      updateShapeFromProps();
+    });
+    shapeStrokeWidth.addEventListener('input', updateShapeFromProps);
+    shapeFontSize.addEventListener('input', updateShapeFromProps);
+    shapeFontFamily.addEventListener('change', updateShapeFromProps);
+    shapeRotation.addEventListener('input', updateShapeFromProps);
+    shapeDelBtn.addEventListener('click', deleteSelectedShape);
+
+    const shapeZFrontBtn = document.getElementById('shapeZFrontBtn');
+    const shapeZBackBtn = document.getElementById('shapeZBackBtn');
+
+    function moveSelectedShape(toFront) {
+      if (!selectedShapeEl) return;
+      const idx = parseInt(selectedShapeEl.closest('.slide').dataset.slide);
+      const id = selectedShapeEl.dataset.shapeId;
+      const shapes = slideShapes[idx] || [];
+      const i = shapes.findIndex(s => s.id === id);
+      if (i < 0) return;
+      const [shape] = shapes.splice(i, 1);
+      if (toFront) {
+        shapes.push(shape);
+      } else {
+        shapes.unshift(shape);
+      }
+      renderShapes(idx);
+      const el = slides[idx].querySelector('.shape[data-shape-id="' + id + '"]');
+      if (el) selectShape(el);
+      saveToServer();
+    }
+
+    shapeZFrontBtn.addEventListener('click', () => moveSelectedShape(true));
+    shapeZBackBtn.addEventListener('click', () => moveSelectedShape(false));
+
+    shapeAlignBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        shapeAlignBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateShapeFromProps();
+      });
+    });
+
+    // Container-level delegation for shape mouse events
+    container.addEventListener('mousedown', (e) => {
+      const shapeEl = e.target.closest('.shape');
+      if (!shapeEl) return;
+      if (document.documentElement.classList.contains('fullscreen')) return;
+      if (e.button !== 0) return;
+
+      const isHandle = e.target.classList.contains('resize-handle');
+      const isRotate = e.target.classList.contains('rot-handle');
+      const slideIdx = parseInt(shapeEl.closest('.slide').dataset.slide);
+      if (slideIdx !== current) return;
+      const shape = getShapeById(slideIdx, shapeEl.dataset.shapeId);
+      if (!shape) return;
+
+      if (isRotate) {
+        e.stopPropagation();
+        e.preventDefault();
+        const rect = shapeEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        shapeDragState = {
+          shapeId: shape.id,
+          idx: slideIdx,
+          handle: 'rotate',
+          startX: e.clientX,
+          startY: e.clientY,
+          cx, cy,
+          startAngle: Math.atan2(e.clientY - cy, e.clientX - cx),
+          startRotation: shape.rotation || 0
+        };
+        return;
+      }
+
+      if (isHandle) {
+        e.stopPropagation();
+        e.preventDefault();
+        const handleDir = e.target.className.replace('resize-handle ', '');
+        const rect = shapeEl.getBoundingClientRect();
+        const cr = shapeEl.closest('.slide').getBoundingClientRect();
+        shapeDragState = {
+          shapeId: shape.id,
+          idx: slideIdx,
+          handle: handleDir,
+          startX: e.clientX,
+          startY: e.clientY,
+          startL: rect.left - cr.left,
+          startT: rect.top - cr.top,
+          startW: rect.width,
+          startH: rect.height
+        };
+        return;
+      }
+
+      selectShape(shapeEl);
+      e.stopPropagation();
+
+      // For text shapes, don't start drag on body click (let contentEditable work)
+      if (shape.type === 'text') return;
+
+      const rect = shapeEl.getBoundingClientRect();
+      const cr = shapeEl.closest('.slide').getBoundingClientRect();
+      shapeDragState = {
+        shapeId: shape.id,
+        idx: slideIdx,
+        handle: 'move',
+        startX: e.clientX,
+        startY: e.clientY,
+        startL: rect.left - cr.left,
+        startT: rect.top - cr.top,
+        startW: rect.width,
+        startH: rect.height,
+        active: false
+      };
+    });
+
+    // Double-click to edit text on any shape
+    container.addEventListener('dblclick', (e) => {
+      const shapeEl = e.target.closest('.shape');
+      if (!shapeEl) return;
+      const slideIdx = parseInt(shapeEl.closest('.slide').dataset.slide);
+      const shape = getShapeById(slideIdx, shapeEl.dataset.shapeId);
+      if (!shape) return;
+
+      selectShape(shapeEl);
+
+      if (shape.type === 'text') {
+        const lbl = shapeEl.querySelector('.shape-label');
+        if (lbl) lbl.focus();
+        return;
+      }
+
+      // Ensure text props
+      if (!shape.text) shape.text = '';
+      if (!shape.fontSize) shape.fontSize = 14;
+      if (!shape.color) shape.color = '#ffffff';
+      if (!shape.fontFamily) shape.fontFamily = 'Poppins';
+
+      // Create or find label
+      let label = shapeEl.querySelector('.shape-label');
+      if (!label) {
+        label = document.createElement('div');
+        label.className = 'shape-label';
+        shapeEl.appendChild(label);
+      }
+      label.textContent = shape.text;
+      label.style.color = shape.color;
+      label.style.fontSize = shape.fontSize + 'px';
+      label.style.fontFamily = shape.fontFamily;
+      label.style.textAlign = shape.textAlign || 'center';
+      label.contentEditable = true;
+      label.style.display = 'flex';
+      label.focus();
+
+      // Save on blur (use one-time setup)
+      if (!label._textInputSetup) {
+        label.addEventListener('blur', function() {
+          this.contentEditable = false;
+          shape.text = this.textContent || '';
+          saveToServer();
+        });
+        label._textInputSetup = true;
+      }
+    });
+
+    // Text input for text shapes and shape labels (debounced)
+    let textSaveTimer = null;
+    document.addEventListener('input', (e) => {
+      const shapeEl = e.target.closest('.shape');
+      if (!shapeEl) return;
+      if (!e.target.classList.contains('shape-label')) return;
+      const slideIdx = parseInt(shapeEl.closest('.slide').dataset.slide);
+      const shapes = slideShapes[slideIdx] || [];
+      const shape = shapes.find(s => s.id === shapeEl.dataset.shapeId);
+      if (shape) {
+        shape.text = e.target.textContent || '';
+      }
+      clearTimeout(textSaveTimer);
+      textSaveTimer = setTimeout(saveToServer, 300);
+    });
+
+    // Deselect shape on outside click
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.shape') || e.target.closest('.shape-props')) return;
+      if (selectedShapeEl) {
+        selectedShapeEl.classList.remove('selected');
+        selectedShapeEl = null;
+        hideShapeProps();
+      }
+    });
+
+    // Shape drag/resize handlers
+    document.addEventListener('mousemove', (e) => {
+      if (!shapeDragState) return;
+      if (shapeDragState.idx !== current) { shapeDragState = null; return; }
+      const slideEl = slides[shapeDragState.idx];
+      if (!slideEl) return;
+      const shapeEl = slideEl.querySelector('.shape[data-shape-id="' + shapeDragState.shapeId + '"]');
+      if (!shapeEl) { shapeDragState = null; return; }
+
+      const h = shapeDragState.handle;
+
+      if (h === 'rotate') {
+        const angle = Math.atan2(e.clientY - shapeDragState.cy, e.clientX - shapeDragState.cx);
+        const deg = (angle - shapeDragState.startAngle) * 180 / Math.PI;
+        const rot = (shapeDragState.startRotation + deg) % 360;
+        const snapped = Math.round(rot / 15) * 15;
+        shapeEl.style.transform = 'rotate(' + snapped + 'deg)';
+        return;
+      }
+
+      const dx = e.clientX - shapeDragState.startX;
+      const dy = e.clientY - shapeDragState.startY;
+
+      if (h === 'move' && !shapeDragState.active) {
+        if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+        shapeDragState.active = true;
+      }
+
+      let x = shapeDragState.startL;
+      let y = shapeDragState.startT;
+      let w = shapeDragState.startW;
+      let hh = shapeDragState.startH;
+      const min = 20;
+
+      const sides = {
+        'e':  () => { w = Math.max(min, shapeDragState.startW + dx); },
+        'w':  () => { const dw = Math.min(shapeDragState.startW - min, dx); x = shapeDragState.startL + dw; w = shapeDragState.startW - dw; },
+        's':  () => { hh = Math.max(min, shapeDragState.startH + dy); },
+        'n':  () => { const dh = Math.min(shapeDragState.startH - min, dy); y = shapeDragState.startT + dh; hh = shapeDragState.startH - dh; },
+        'ne': () => { w = Math.max(min, shapeDragState.startW + dx); const dh = Math.min(shapeDragState.startH - min, dy); y = shapeDragState.startT + dh; hh = shapeDragState.startH - dh; },
+        'nw': () => { const dw = Math.min(shapeDragState.startW - min, dx); x = shapeDragState.startL + dw; w = shapeDragState.startW - dw; const dh = Math.min(shapeDragState.startH - min, dy); y = shapeDragState.startT + dh; hh = shapeDragState.startH - dh; },
+        'se': () => { w = Math.max(min, shapeDragState.startW + dx); hh = Math.max(min, shapeDragState.startH + dy); },
+        'sw': () => { const dw = Math.min(shapeDragState.startW - min, dx); x = shapeDragState.startL + dw; w = shapeDragState.startW - dw; hh = Math.max(min, shapeDragState.startH + dy); },
+        'move': () => { x = shapeDragState.startL + dx; y = shapeDragState.startT + dy; }
+      };
+      if (sides[h]) sides[h]();
+
+      shapeEl.style.left = x + 'px';
+      shapeEl.style.top = y + 'px';
+      shapeEl.style.width = w + 'px';
+      shapeEl.style.height = hh + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!shapeDragState) return;
+      if (shapeDragState.idx !== current) { shapeDragState = null; return; }
+      const slideEl = slides[shapeDragState.idx];
+      if (!slideEl) { shapeDragState = null; return; }
+      const shapeEl = slideEl.querySelector('.shape[data-shape-id="' + shapeDragState.shapeId + '"]');
+      if (!shapeEl) { shapeDragState = null; return; }
+      const shape = getShapeById(shapeDragState.idx, shapeDragState.shapeId);
+      if (!shape) { shapeDragState = null; return; }
+
+      if (shapeDragState.handle === 'rotate') {
+        const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+        if (match) {
+          shape.rotation = parseFloat(match[1]) || 0;
+          shapeRotation.value = shape.rotation;
+        }
+      } else {
+        const sw = slideEl.offsetWidth;
+        const sh = slideEl.offsetHeight;
+        const wr = shapeEl.getBoundingClientRect();
+        const sr = slideEl.getBoundingClientRect();
+        shape.x = ((wr.left - sr.left) / sw * 100) + '%';
+        shape.y = ((wr.top - sr.top) / sh * 100) + '%';
+        shape.w = (wr.width / sw * 100) + '%';
+        shape.h = (wr.height / sh * 100) + '%';
+        shapeEl.style.left = shape.x;
+        shapeEl.style.top = shape.y;
+        shapeEl.style.width = shape.w;
+        shapeEl.style.height = shape.h;
+      }
+
+      shapeDragState = null;
+      saveToServer();
+    });
+
+    // ---- Float shape button & popup ----
+    const shapeFloatBtn = document.getElementById('shapeFloatBtn');
+    const shapePopup = document.getElementById('shapePopup');
+    shapeFloatBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      shapePopup.classList.toggle('show');
+    });
+    shapePopup.querySelectorAll('.shape-popup-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        addShapeToSlide(btn.dataset.shape);
+        shapePopup.classList.remove('show');
+      });
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#shapeFloatBtn') && !e.target.closest('.shape-popup')) {
+        shapePopup.classList.remove('show');
+      }
+    });
+
+    // ---- Integrate shapes into save/load ----
+    const origSave = saveToServer;
+    saveToServer = async function () {
+      const kv = {
+        count: slides.length,
+        urls: { ...slideUrls },
+        resize: { ...resizeData },
+        mode: { ...slideMode },
+        names: { ...slideNames },
+        bgColors: { ...slideBgColors },
+        notes: { ...slideNotes },
+        shapes: { ...slideShapes },
+        apiUrl: apiBaseUrl
+      };
+      try {
+        const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kv })
+        });
+        if (!resp.ok) return;
+        const result = await resp.json();
+        if (result.kv && result.kv.urls) slideUrls = result.kv.urls;
+      } catch (_) { showToast('Failed to save deck'); }
+    };
+
+    // Load shapes from server (initial loadFromServer ran before our override)
+    try {
+      const resp = await fetch(resolveUrl('/api/data/' + encodeURIComponent(deckName)));
+      if (resp.ok) {
+        const kv = (await resp.json()).kv || {};
+        slideShapes = kv.shapes || {};
+      }
+    } catch (_) {}
+
+    // ---- Integrate shapes into slide operations ----
+    const origAddSlide = addSlide;
+    addSlide = function () {
+      origAddSlide();
+      renderShapes(slides.length - 1);
+    };
+
+    const _origRemoveSlide = removeSlide;
+    removeSlide = function (index) {
+      delete slideShapes[index];
+      _origRemoveSlide(index);
+      const reindexed = {};
+      slides.forEach((_, i) => {
+        if (slideShapes[i] !== undefined) reindexed[i] = slideShapes[i];
+        else if (slideShapes[i + 1] !== undefined) reindexed[i] = slideShapes[i + 1];
+      });
+      slideShapes = reindexed;
+      renderAllShapes();
+    };
+
+    const origDuplicateSlide = duplicateSlide;
+    duplicateSlide = function (index) {
+      const idx = index + 1;
+      origDuplicateSlide(index);
+      if (slideShapes[index]) {
+        slideShapes[idx] = slideShapes[index].map(s => ({ ...s, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }));
+      }
+      renderShapes(idx);
+    };
+
+    const origReorder = reorderSlides;
+    reorderSlides = function (fromIdx, toIdx) {
+      const shapesInOrder = slides.map((_, i) => slideShapes[i] || null);
+      const [movedShapes] = shapesInOrder.splice(fromIdx, 1);
+      shapesInOrder.splice(toIdx, 0, movedShapes);
+      origReorder(fromIdx, toIdx);
+      slideShapes = {};
+      shapesInOrder.forEach((sh, i) => { if (sh) slideShapes[i] = sh; });
+      renderAllShapes();
+    };
+
+    // Clean up selection on slide change
+    const origShapeUpdate = update;
+    update = function () {
+      origShapeUpdate();
+      if (selectedShapeEl) {
+        const slideEl = selectedShapeEl.closest('.slide');
+        if (!slideEl || !slideEl.classList.contains('active')) {
+          selectedShapeEl.classList.remove('selected');
+          selectedShapeEl = null;
+          hideShapeProps();
+        }
+      }
+    };
+
     slides.forEach(el => { setupSlideDrop(el); setupResize(el); });
 
     createDots();
     applyAllImages();
     rebuildThumbnails();
+    renderAllShapes();
     update();
 
     const skeletonSlide = document.getElementById('skeletonSlide');
