@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
-import { resolveUrl } from '../api'
+import { resolveUrl, uploadImage } from '../api'
 
 export default function SlideImage({ slideIndex }) {
   const { slideUrls, setSlideUrls, resizeData, setResizeData,
@@ -155,7 +155,6 @@ export default function SlideImage({ slideIndex }) {
           const file = e.dataTransfer.files[0]
           if (file && file.type.startsWith('image/')) {
             try {
-              const { uploadImage } = await import('../api')
               const serverUrl = await uploadImage(file)
               setSlideUrls(prev => ({ ...prev, [slideIndex]: serverUrl }))
               setResizeData(prev => { const n = { ...prev }; delete n[slideIndex]; return n })
