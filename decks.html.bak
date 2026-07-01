@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Slide Decks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', -apple-system, sans-serif;
+      background: #1a1a24;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .header h1 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    .header h1 span {
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .view-toggle {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      line-height: 1;
+    }
+    .view-toggle:hover {
+      background: rgba(255,255,255,0.08);
+      color: #a0a0b8;
+      border-color: rgba(255,255,255,0.15);
+    }
+    .create-header-btn {
+      background: #6366f1;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.4rem 1rem;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .create-header-btn:hover { opacity: 0.85; }
+    .view-toggle .icon {
+      font-size: 1rem;
+    }
+    .deckCount {
+      background: rgba(255,255,255,0.06);
+      color: #818cf8;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 0.3rem;
+      line-height: 1.3;
+    }
+    .sort-select {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      color: #6b7280;
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .sort-select:hover {
+      color: #a0a0b8;
+      border-color: rgba(255,255,255,0.15);
+    }
+    .sort-select:focus {
+      border-color: #6366f1;
+    }
+    .sort-select option {
+      background: #1c1c24;
+      color: #e2e8f0;
+    }
+    .search-bar {
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.6rem 1rem 0.6rem 2.2rem;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .search-bar input:focus {
+      border-color: #6366f1;
+    }
+    .search-bar input::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+    .search-bar .search-icon {
+      position: absolute;
+      left: 0.7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .deck-card {
+      background: #1c1c24;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+    }
+    .deck-card:hover {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+    .deck-card .thumb {
+      width: 64px;
+      height: 44px;
+      border-radius: 0.4rem;
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(255,255,255,0.04);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.15);
+      overflow: hidden;
+    }
+    .deck-card .info {
+      flex: 1;
+      min-width: 0;
+    }
+    .deck-card .name {
+      color: #e2e8f0;
+      font-size: 1rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-card .count {
+      color: #6b7280;
+      font-size: 0.75rem;
+      margin-top: 0.15rem;
+    }
+    .deck-card .time {
+      color: #52526a;
+      font-size: 0.7rem;
+      margin-top: 0.05rem;
+    }
+    .deck-card .arrow {
+      color: #6b7280;
+      font-size: 1.25rem;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+    .deck-card:hover .arrow {
+      color: #a5b4fc;
+    }
+    .deck-card .star-btn {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      background: rgba(0,0,0,0.35);
+      border: none;
+      border-radius: 50%;
+      padding: 3px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .deck-card .star-btn:hover {
+      transform: scale(1.15);
+      background: rgba(0,0,0,0.55);
+    }
+    .deck-card .star-btn svg {
+      width: 11px;
+      height: 11px;
+      display: block;
+      transition: transform 0.3s, fill 0.3s, stroke 0.3s;
+    }
+    .deck-card .star-btn.on svg {
+      fill: #fbbf24;
+      stroke: #fbbf24;
+      filter: drop-shadow(0 0 4px rgba(251,191,36,0.5));
+    }
+    .deck-card .star-btn:not(.on) svg {
+      fill: transparent;
+      stroke: rgba(255,255,255,0.35);
+    }
+    .deck-card .star-btn.on:hover svg {
+      transform: scale(1.1) rotate(-8deg);
+    }
+    .deck-card .star-btn:not(.on):hover svg {
+      transform: scale(1.1);
+    }
+    .deck-card .thumb {
+      position: relative;
+    }
+    .deck-card .del-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #2a2a36;
+      color: #a0a0b8;
+      font-size: 0.7rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      z-index: 2;
+      font-family: inherit;
+    }
+    .deck-card .del-btn:hover {
+      background: #ef4444;
+      color: #fff;
+      border-color: #ef4444;
+    }
+    .deck-card .rename-btn {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #2a2a36;
+      color: #a0a0b8;
+      font-size: 0.65rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      z-index: 2;
+      font-family: inherit;
+    }
+    .deck-card .rename-btn:hover {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
+    .deck-card:hover .del-btn,
+    .deck-card:hover .rename-btn {
+      display: flex;
+    }
+    .deck-card {
+      position: relative;
+    }
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .confirm-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .confirm-box {
+      background: #1a1a24;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      max-width: 340px;
+      width: 90%;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    }
+    .confirm-box p {
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      margin: 0 0 1.25rem;
+      line-height: 1.5;
+    }
+    .confirm-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+    .confirm-actions button {
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+    }
+    .confirm-actions .btn-cancel {
+      background: rgba(255,255,255,0.06);
+      color: #a0a0b8;
+    }
+    .confirm-actions .btn-cancel:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .confirm-actions .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+    }
+    .confirm-actions .btn-danger:hover {
+      opacity: 0.9;
+    }
+    .new-deck {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .new-deck input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.7rem 1rem;
+      color: #e2e8f0;
+      font-size: 0.9rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .new-deck input:focus {
+      border-color: #6366f1;
+    }
+    .new-deck button {
+      background: #6366f1;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.7rem 1.25rem;
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .new-deck button:hover { opacity: 0.85; }
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    .error {
+      display: none;
+      text-align: center;
+      padding: 0.5rem;
+      color: #ef4444;
+      font-size: 0.85rem;
+    }
+    .error.show { display: block; }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-card {
+      height: 68px;
+      border-radius: 0.75rem;
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+    .list.grid .skeleton-card {
+      height: 180px;
+    }
+    .list.compact .skeleton-card {
+      height: 40px;
+      border-radius: 0.4rem;
+    }
+    .list.grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.75rem;
+    }
+    .list.grid .deck-card {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      padding: 0;
+    }
+    .list.grid .deck-card .thumb {
+      width: 100%;
+      height: 120px;
+      border-radius: 0.75rem 0.75rem 0 0;
+      font-size: 1.5rem;
+    }
+    .list.grid .deck-card .info {
+      padding: 0 0.75rem 0.75rem;
+    }
+    .list.grid .deck-card .arrow {
+      display: none;
+    }
+    .list.grid .deck-card .rename-btn,
+    .list.grid .deck-card .del-btn {
+      top: 4px;
+    }
+    .list.grid .deck-card .rename-btn {
+      left: auto;
+      right: 4px;
+      top: 28px;
+    }
+    .list.grid .deck-card .del-btn {
+      right: 4px;
+    }
+    .list.grid + .empty {
+      grid-column: 1 / -1;
+    }
+    .list.compact .deck-card {
+      padding: 0.35rem 0.75rem;
+      gap: 0.5rem;
+      border-radius: 0.4rem;
+    }
+    .list.compact .deck-card .thumb,
+    .list.compact .deck-card .count,
+    .list.compact .deck-card .time,
+    .list.compact .deck-card .arrow {
+      display: none;
+    }
+    .list.compact .deck-card .name {
+      font-size: 0.85rem;
+    }
+    .list.compact .deck-card .star-btn {
+      position: static;
+      background: none;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+    }
+    .list.compact .deck-card .star-btn:hover {
+      transform: scale(1.15);
+      background: none;
+    }
+    .list.compact .deck-card .star-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+    .list.compact .deck-card .rename-btn,
+    .list.compact .deck-card .del-btn {
+      top: 2px;
+    }
+    .list.compact .deck-card .rename-btn { left: auto; right: 26px; }
+    .list.compact .deck-card .del-btn { right: 2px; }
+    .list.compact {
+      gap: 0.4rem;
+    }
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .pagination .page-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      color: #6b7280;
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      line-height: 1;
+    }
+    .pagination .page-btn:hover:not(:disabled) {
+      background: rgba(255,255,255,0.08);
+      color: #a0a0b8;
+      border-color: rgba(255,255,255,0.15);
+    }
+    .pagination .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .pagination .page-btn.active {
+      background: rgba(99,102,241,0.2);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+    .pagination .page-info {
+      color: #52526a;
+      font-size: 0.8rem;
+      padding: 0 0.25rem;
+    }
+
+    .ctx-menu {
+      position: fixed;
+      z-index: 700;
+      background: #1c1c24;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.6rem;
+      padding: 0.3rem 0;
+      min-width: 170px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      display: none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .ctx-menu.show {
+      display: block;
+    }
+    .ctx-item {
+      padding: 0.45rem 1rem;
+      font-size: 0.82rem;
+      color: #c0c0d0;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .ctx-item:hover {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+    }
+    .ctx-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin: 0.25rem 0;
+    }
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 0.65rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      animation: toastIn 0.25s ease-out;
+      max-width: 360px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .toast-error { background: #dc2626; }
+    .toast-success { background: #16a34a; }
+    .toast-info { background: #2563eb; }
+    @keyframes toastIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <svg class="logo" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <h1>Presently<span>v1.0</span></h1>
+        <span class="deckCount" id="deckCount">0</span>
+      </div>
+      <div class="header-right">
+        <button class="create-header-btn" id="createHeaderBtn" title="New deck">+ New</button>
+        <select class="sort-select" id="sortSelect">
+          <option value="name">Name</option>
+          <option value="count">Slides</option>
+          <option value="modified">Modified</option>
+        </select>
+        <button class="view-toggle" id="viewToggle" title="Toggle view"><span class="icon">&#9638;</span> <span id="viewLabel">Grid</span></button>
+      </div>
+    </div>
+    <div class="search-bar"><span class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input type="text" id="searchInput" placeholder="Search decks..." spellcheck="false"></div>
+    <div class="list" id="deckList"></div>
+    <div class="empty" id="emptyMsg" style="display:none;">No decks yet. Create one below.</div>
+    <div class="pagination" id="pagination" style="display:none;">
+      <button class="page-btn" id="pagePrev" disabled>&#8249; Prev</button>
+      <span class="page-info" id="pageInfo"></span>
+      <button class="page-btn" id="pageNext" disabled>Next &#8250;</button>
+    </div>
+    <div class="new-deck">
+      <input type="text" id="newDeckInput" placeholder="New deck name..." spellcheck="false" maxlength="100">
+      <button id="createBtn">Create & Open</button>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <p id="confirmMsg">Delete this deck?</p>
+      <div class="confirm-actions">
+        <button class="btn-cancel" id="confirmCancel">Cancel</button>
+        <button class="btn-danger" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="renameOverlay">
+    <div class="confirm-box">
+      <p>Rename deck</p>
+      <input type="text" id="renameInput" placeholder="New deck name..." spellcheck="false" maxlength="100" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:0.5rem;padding:0.7rem 1rem;color:#e2e8f0;font-size:0.9rem;outline:none;font-family:inherit;transition:border-color 0.2s;margin:0.75rem 0 1.25rem;">
+      <div class="confirm-actions">
+        <button class="btn-cancel" id="renameCancel">Cancel</button>
+        <button class="btn-save" id="renameSave" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:0.5rem 1.25rem;border-radius:0.5rem;font-size:0.85rem;font-weight:500;cursor:pointer;border:none;transition:opacity 0.2s;font-family:inherit;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctx-menu" id="ctxMenu">
+    <div class="ctx-item" data-action="rename">Rename</div>
+    <div class="ctx-item" data-action="duplicate">Duplicate</div>
+    <div class="ctx-item" data-action="star" id="ctxStar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Star</div>
+    <div class="ctx-divider"></div>
+    <div class="ctx-item" data-action="delete">Delete</div>
+  </div>
+
+  <script>
+    const SERVER = "http://localhost:3002";
+    const list = document.getElementById('deckList');
+    const emptyMsg = document.getElementById('emptyMsg');
+    const deckCount = document.getElementById('deckCount');
+    const newInput = document.getElementById('newDeckInput');
+    const createBtn = document.getElementById('createBtn');
+    const viewToggle = document.getElementById('viewToggle');
+    const viewLabel = document.getElementById('viewLabel');
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+    const pagination = document.getElementById('pagination');
+    const pagePrev = document.getElementById('pagePrev');
+    const pageNext = document.getElementById('pageNext');
+    const pageInfo = document.getElementById('pageInfo');
+
+    function showToast(msg, type = 'error') {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+    }
+
+    let allDecks = [];
+    let searchQuery = '';
+    let sortBy = localStorage.getItem('deckSortBy') || 'modified';
+    const PAGE_SIZE = 20;
+    let currentPage = 1;
+
+    const MODES = ['grid', 'list', 'compact'];
+    const MODE_ICONS = { grid: '&#9638;', list: '&#9776;', compact: '&#8212;' };
+    const MODE_LABELS = { grid: 'Grid', list: 'List', compact: 'Compact' };
+    let viewMode = localStorage.getItem('deckViewMode') || 'grid';
+    if (!MODES.includes(viewMode)) viewMode = 'grid';
+
+    function applyViewMode() {
+      list.classList.remove('grid', 'compact');
+      list.classList.add(viewMode);
+      viewLabel.textContent = MODE_LABELS[viewMode];
+      viewToggle.querySelector('.icon').innerHTML = MODE_ICONS[viewMode];
+      localStorage.setItem('deckViewMode', viewMode);
+      if (list.querySelector('.skeleton-card')) showSkeletons();
+    }
+
+    viewToggle.addEventListener('click', () => {
+      const idx = MODES.indexOf(viewMode);
+      viewMode = MODES[(idx + 1) % MODES.length];
+      applyViewMode();
+    });
+
+    applyViewMode();
+
+    sortSelect.value = sortBy;
+
+    function sortDecks() {
+      allDecks.sort((a, b) => {
+        if (!!b.starred - !!a.starred) return !!b.starred - !!a.starred;
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'count') return (b.count || 0) - (a.count || 0);
+        if (sortBy === 'modified') return (b.modified || '').localeCompare(a.modified || '');
+        return 0;
+      });
+    }
+
+    sortSelect.addEventListener('change', () => {
+      sortBy = sortSelect.value;
+      localStorage.setItem('deckSortBy', sortBy);
+      currentPage = 1;
+      if (allDecks.length) { sortDecks(); renderDecks(); }
+    });
+
+    function resolveUrl(path) {
+      if (!path) return '';
+      if (path.match(/^https?:\/\//)) return path;
+      if (path.startsWith('/api/')) return SERVER + path;
+      return SERVER + '/' + path.replace(/^\//, '');
+    }
+
+    function timeAgo(iso) {
+      const diff = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'Just now';
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      if (days < 30) return days + 'd ago';
+      const months = Math.floor(days / 30);
+      if (months < 12) return months + 'mo ago';
+      return Math.floor(months / 12) + 'y ago';
+    }
+
+    function renderDecks() {
+      list.innerHTML = '';
+      const q = searchQuery.toLowerCase();
+      const filtered = q ? allDecks.filter(d => d.name.toLowerCase().includes(q)) : allDecks;
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const page = filtered.slice(start, start + PAGE_SIZE);
+      deckCount.textContent = filtered.length + '/' + allDecks.length;
+      if (filtered.length === 0) {
+        emptyMsg.style.display = '';
+        emptyMsg.textContent = q ? 'No decks match "' + q + '".' : 'No decks yet. Create one below.';
+        pagination.style.display = 'none';
+        return;
+      }
+      emptyMsg.style.display = 'none';
+      page.forEach(d => {
+        const a = document.createElement('a');
+        a.className = 'deck-card';
+        a.href = 'slideshow.html?deck=' + encodeURIComponent(d.name);
+        const thumbUrl = d.firstImage ? resolveUrl(d.firstImage) : '';
+        const thumbHtml = thumbUrl
+          ? "background-image:url('" + thumbUrl.replace(/'/g, "\\'") + "')"
+          : '';
+        const timeStr = d.lastOpened ? timeAgo(d.lastOpened) : '';
+        const starred = !!d.starred;
+        a.innerHTML =
+          '<div class="thumb" style="' + thumbHtml + '">' + (thumbUrl ? '' : '&#x1F5BC;') + '<button class="star-btn' + (starred ? ' on' : '') + '" data-name="' + d.name.replace(/"/g, '&quot;') + '" title="' + (starred ? 'Unstar' : 'Star') + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+          '</button></div>' +
+          '<div class="info"><div class="name">' + d.name.replace(/</g, '&lt;') + '</div><div class="count">' + d.count + ' slide' + (d.count !== 1 ? 's' : '') + '</div><div class="time">' + timeStr + '</div></div>' +
+          '<span class="arrow">&rarr;</span>' +
+          '<button class="rename-btn" data-name="' + d.name.replace(/"/g, '&quot;') + '" title="Rename deck">&#9998;</button>' +
+          '<button class="del-btn" data-name="' + d.name.replace(/"/g, '&quot;') + '" title="Delete deck">&times;</button>';
+        list.appendChild(a);
+      });
+      document.querySelectorAll('.deck-card .del-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const name = btn.dataset.name;
+          showConfirm('Delete "' + name + '"? This cannot be undone.', () => deleteDeck(name));
+        });
+      });
+      document.querySelectorAll('.deck-card .rename-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          showRename(btn.dataset.name);
+        });
+      });
+      document.querySelectorAll('.deck-card .star-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleStar(btn.dataset.name, btn);
+        });
+      });
+      document.querySelectorAll('.deck-card').forEach(card => {
+        card.addEventListener('contextmenu', e => {
+          e.preventDefault();
+          const name = card.querySelector('.del-btn').dataset.name;
+          showCtxMenu(e.clientX, e.clientY, name);
+        });
+      });
+      renderPagination(totalPages, filtered.length);
+    }
+
+    function renderPagination(totalPages, totalItems) {
+      if (totalPages <= 1) {
+        pagination.style.display = 'none';
+        return;
+      }
+      pagination.style.display = 'flex';
+      pagePrev.disabled = currentPage <= 1;
+      pageNext.disabled = currentPage >= totalPages;
+      let info = 'Page ' + currentPage + ' of ' + totalPages;
+      const start = (currentPage - 1) * PAGE_SIZE + 1;
+      const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+      info += ' (' + start + '-' + end + ')';
+      pageInfo.textContent = info;
+    }
+
+    pagePrev.addEventListener('click', () => {
+      if (currentPage > 1) { currentPage--; renderDecks(); }
+    });
+    pageNext.addEventListener('click', () => {
+      const q = searchQuery.toLowerCase();
+      const filtered = q ? allDecks.filter(d => d.name.toLowerCase().includes(q)) : allDecks;
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+      if (currentPage < totalPages) { currentPage++; renderDecks(); }
+    });
+
+    function showSkeletons() {
+      const count = viewMode === 'grid' ? 6 : 4;
+      list.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const sk = document.createElement('div');
+        sk.className = 'skeleton-card';
+        list.appendChild(sk);
+      }
+      emptyMsg.style.display = 'none';
+    }
+
+    function hideSkeletons() {
+      list.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+    }
+
+    async function loadDecks() {
+      showSkeletons();
+      try {
+        const resp = await fetch(SERVER + '/api/decks');
+        const data = await resp.json();
+        allDecks = data.decks || [];
+        sortDecks();
+        renderDecks();
+      } catch (_) {
+        list.innerHTML = '';
+        showToast('Failed to load decks');
+      }
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      currentPage = 1;
+      renderDecks();
+    });
+
+    function getUntitledName() {
+      const names = new Set(allDecks.map(d => d.name));
+      let i = 0;
+      while (names.has('Untitled' + (i || ''))) i++;
+      return 'Untitled' + (i || '');
+    }
+
+    function openDeck(name) {
+      window.location.href = 'slideshow.html?deck=' + encodeURIComponent(name);
+    }
+
+    createBtn.addEventListener('click', () => {
+      const name = newInput.value.trim() || getUntitledName();
+      openDeck(name);
+    });
+
+    document.getElementById('createHeaderBtn').addEventListener('click', () => {
+      openDeck(getUntitledName());
+    });
+
+    newInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createBtn.click();
+    });
+
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmMsg = document.getElementById('confirmMsg');
+    const confirmCancel = document.getElementById('confirmCancel');
+    const confirmDelete = document.getElementById('confirmDelete');
+    let confirmCb = null;
+
+    function showConfirm(msg, cb) {
+      confirmMsg.textContent = msg;
+      confirmCb = cb;
+      confirmOverlay.classList.add('open');
+    }
+
+    function hideConfirm() {
+      confirmOverlay.classList.remove('open');
+      confirmCb = null;
+    }
+
+    confirmCancel.addEventListener('click', hideConfirm);
+    confirmDelete.addEventListener('click', () => {
+      const cb = confirmCb;
+      hideConfirm();
+      if (cb) cb();
+    });
+    confirmOverlay.addEventListener('click', (e) => {
+      if (e.target === confirmOverlay) hideConfirm();
+    });
+
+    async function toggleStar(name, btn) {
+      try {
+        const resp = await fetch(SERVER + '/api/star/' + encodeURIComponent(name), { method: 'PATCH' });
+        if (!resp.ok) throw new Error('Star failed');
+        const data = await resp.json();
+        const deck = allDecks.find(d => d.name === name);
+        if (deck) deck.starred = data.starred;
+        sortDecks();
+        renderDecks();
+      } catch (_) {
+        showToast('Failed to update star');
+      }
+    }
+
+    async function deleteDeck(name) {
+      try {
+        const resp = await fetch(SERVER + '/api/data/' + encodeURIComponent(name), { method: 'DELETE' });
+        if (!resp.ok) throw new Error('Delete failed');
+        loadDecks();
+      } catch (_) {
+        showToast('Failed to delete deck');
+      }
+    }
+
+    const renameOverlay = document.getElementById('renameOverlay');
+    const renameInput = document.getElementById('renameInput');
+    const renameCancel = document.getElementById('renameCancel');
+    const renameSave = document.getElementById('renameSave');
+    let renameOldName = null;
+
+    function showRename(oldName) {
+      renameOldName = oldName;
+      renameInput.value = oldName;
+      renameOverlay.classList.add('open');
+      setTimeout(() => renameInput.focus(), 100);
+    }
+
+    function hideRename() {
+      renameOverlay.classList.remove('open');
+      renameOldName = null;
+    }
+
+    renameCancel.addEventListener('click', hideRename);
+    renameSave.addEventListener('click', async () => {
+      const newName = renameInput.value.trim();
+      if (!newName || newName === renameOldName) { hideRename(); return; }
+      try {
+        const resp = await fetch(SERVER + '/api/data/' + encodeURIComponent(renameOldName));
+        if (!resp.ok) throw new Error('Fetch failed');
+        const data = await resp.json();
+        const kv = data.kv || {};
+        const saveResp = await fetch(SERVER + '/api/data/' + encodeURIComponent(newName), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kv })
+        });
+        if (!saveResp.ok) throw new Error('Save failed');
+        const delResp = await fetch(SERVER + '/api/data/' + encodeURIComponent(renameOldName), { method: 'DELETE' });
+        if (!delResp.ok) throw new Error('Delete failed');
+        hideRename();
+        loadDecks();
+      } catch (_) {
+        showToast('Failed to rename deck');
+        hideRename();
+      }
+    });
+    renameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') renameSave.click();
+      if (e.key === 'Escape') hideRename();
+    });
+    renameOverlay.addEventListener('click', (e) => {
+      if (e.target === renameOverlay) hideRename();
+    });
+
+    const ctxMenu = document.getElementById('ctxMenu');
+    let ctxDeckName = null;
+
+    function showCtxMenu(x, y, name) {
+      ctxDeckName = name;
+      const deck = allDecks.find(d => d.name === name);
+      const starItem = document.getElementById('ctxStar');
+      const starSvg = starItem.querySelector('svg');
+      starItem.innerHTML = '';
+      if (starSvg) starItem.appendChild(starSvg);
+      starItem.appendChild(document.createTextNode(deck && deck.starred ? ' Unstar' : ' Star'));
+      ctxMenu.style.left = x + 'px';
+      ctxMenu.style.top = y + 'px';
+      ctxMenu.classList.add('show');
+    }
+
+    function hideCtxMenu() {
+      ctxMenu.classList.remove('show');
+      ctxDeckName = null;
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!ctxMenu.contains(e.target)) hideCtxMenu();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hideCtxMenu();
+    });
+
+    ctxMenu.querySelectorAll('.ctx-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        const name = ctxDeckName;
+        hideCtxMenu();
+        if (!name) return;
+        if (action === 'rename') showRename(name);
+        else if (action === 'delete') showConfirm('Delete "' + name + '"? This cannot be undone.', () => deleteDeck(name));
+        else if (action === 'duplicate') duplicateDeck(name);
+        else if (action === 'star') toggleStar(name, null);
+      });
+    });
+
+    async function duplicateDeck(name) {
+      try {
+        const resp = await fetch(SERVER + '/api/data/' + encodeURIComponent(name));
+        if (!resp.ok) throw new Error('Fetch failed');
+        const data = await resp.json();
+        const kv = data.kv || {};
+        let copyName = name + ' (Copy)';
+        let i = 2;
+        const existingResp = await fetch(SERVER + '/api/decks');
+        const existingData = await existingResp.json();
+        const existingNames = (existingData.decks || []).map(d => d.name);
+        while (existingNames.includes(copyName)) {
+          copyName = name + ' (Copy ' + i + ')';
+          i++;
+        }
+        const saveResp = await fetch(SERVER + '/api/data/' + encodeURIComponent(copyName), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kv })
+        });
+        if (!saveResp.ok) throw new Error('Save failed');
+        loadDecks();
+      } catch (_) {
+        showToast('Failed to duplicate deck');
+      }
+    }
+
+    loadDecks();
+  </script>
+<div class="toast-container" id="toastContainer"></div>
+</body>
+</html>
