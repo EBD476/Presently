@@ -1,8 +1,9 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
-import DeckListPage from './pages/DeckListPage'
 import SlideshowPage from './pages/SlideshowPage'
+import DeckListPage from './pages/DeckListPage'
+
 
 export default function App() {
   return (

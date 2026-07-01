@@ -1,5 +1,15 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    /* body , #root {
+      font-family: 'Poppins', -apple-system, sans-serif;
+      background: #1a1a24;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    } */
+
+    .deck-page{
       font-family: 'Poppins', -apple-system, sans-serif;
       background: #1a1a24;
       min-height: 100vh;
@@ -8,6 +18,7 @@
       justify-content: center;
       padding: 2rem;
     }
+
     .container {
       width: 100%;
       max-width: 900px;

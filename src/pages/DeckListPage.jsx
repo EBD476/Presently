@@ -4,6 +4,7 @@ import { fetchDecks, toggleStar as apiToggleStar, deleteDeck as apiDeleteDeck, s
 import { timeAgo } from '../utils'
 import { useToast } from '../components/Toast'
 import ConfirmDialog from '../components/ConfirmDialog'
+import '../styles/decks.css'
 
 const MODES = ['grid', 'list', 'compact']
 const MODE_ICONS = { grid: '\u25B8', list: '\u2261', compact: '\u2014' }
@@ -134,6 +135,7 @@ export default function DeckListPage() {
   }
 
   return (
+    <div className="deck-page">
     <div className="container" onClick={() => setCtxPos(null)}>
       <div className="header">
         <div className="header-left">
@@ -245,6 +247,7 @@ export default function DeckListPage() {
           <div className="ctx-item" onClick={() => { showConfirm('Delete "' + ctxDeck + '"? This cannot be undone.', () => handleDeleteDeck(ctxDeck)); setCtxPos(null) }}>Delete</div>
         </div>
       )}
+    </div>
     </div>
   )
 }

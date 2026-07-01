@@ -86,14 +86,23 @@
       box-sizing: border-box;
     }
 
-    body {
-      /* font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; */
+    /* body {
+      font-family: 'poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+      background: #e8e8ee !;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: stretch;
+    } */
+
+    .slideshow-page{
       font-family: 'poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
       background: #e8e8ee;
       overflow: hidden;
       height: 100vh;
       display: flex;
       align-items: stretch;
+      width: 100%;
     }
 
     .sidebar {

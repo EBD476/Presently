@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams,useNavigate  } from 'react-router-dom'
 import { SlideshowProvider, useSlideshow } from '../context/SlideshowContext'
 import { useToast } from '../components/Toast'
 import { resolveUrl, uploadImage } from '../api'
@@ -10,6 +10,8 @@ import ShapeProps from '../components/ShapeProps'
 import Navigation from '../components/Navigation'
 import SettingsModal from '../components/SettingsModal'
 import { getDefaultShape } from '../utils'
+import '../styles/slideshow.css'
+
 
 function SlideshowEditor() {
   const navigate = useNavigate()
@@ -400,6 +402,7 @@ function SlideshowEditor() {
 
   return (
     <>
+     <div className="slideshow-page">
       <Sidebar />
       <button className="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"
         onClick={() => setSidebarCollapsed(c => !c)}>&#9776;</button>
@@ -720,6 +723,7 @@ function SlideshowEditor() {
       )}
 
       <div className="upload-loading" id="uploadLoading"><div className="spinner"></div></div>
+      </div>
     </>
   )
 }
