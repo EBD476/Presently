@@ -904,7 +904,7 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
+      background: #ffffff63;
       border: none;
       cursor: pointer;
       transition: background 0.3s, transform 0.3s;
@@ -1665,6 +1665,37 @@
       border-bottom: 8px solid transparent;
       border-left: 12px solid currentColor;
     }
+    .line-handle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border: 2.5px solid #6366f1;
+      border-radius: 50%;
+      z-index: 12;
+      pointer-events: auto;
+      display: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      cursor: grab;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .line-handle:hover {
+      transform: scale(1.3);
+      background: #6366f1;
+    }
+    .shape.selected .line-handle {
+      display: block;
+    }
+    .line-handle.start {
+      left: -7px;
+      top: calc(50% - 7px);
+      cursor: move;
+    }
+    .line-handle.end {
+      right: -7px;
+      top: calc(50% - 7px);
+      cursor: move;
+    }
     .shape-text {
       min-width: 40px;
       min-height: 24px;
@@ -1712,6 +1743,15 @@
     .shape-image .shape-img-placeholder svg {
       width: 32px;
       height: 32px;
+    }
+    .shape-image.selected {
+      outline: 2px solid #6366f1;
+    }
+    .shape-image .resize-handle {
+      display: none;
+    }
+    .shape-image.selected .resize-handle {
+      display: block;
     }
     .shape-text.selected .resize-handle {
       display: block;
@@ -1853,6 +1893,23 @@
       cursor: pointer;
     }
     .shape-props select:focus { border-color: #6366f1; }
+    #shapeLineDash {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255,255,255,0.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6' fill='none' stroke='%23a0a0b8' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 6px center;
+      padding: 0.2rem 1.4rem 0.2rem 0.4rem;
+      font-size: 0.7rem;
+      width: 76px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    #shapeLineDash:hover {
+      background-color: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+    }
+    #shapeLineDash:focus {
+      background-color: rgba(255,255,255,0.08);
+    }
     .shape-props button {
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.1);
@@ -2024,6 +2081,15 @@
       <span class="shape-prop-group" id="shapeStrokeGroup"><label>Stroke</label><input type="color" id="shapeStroke" value="#ffffff"></span>
       <span class="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" id="shapeStrokeOpacity" min="0" max="1" step="0.05" value="1" style="width:48px"><label class="opacity-label" id="shapeStrokeOpacityLabel">100%</label></span>
       <span class="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" id="shapeStrokeWidth" value="2" min="0" max="20" style="width:36px"></span>
+      <span class="shape-prop-group" id="shapeLineWeightGroup" style="display:none"><label>Weight</label><input type="range" id="shapeLineWeightSlider" min="1" max="20" value="3" style="width:52px"><input type="number" id="shapeLineWeight" value="3" min="1" max="20" style="width:36px"></span>
+      <span class="shape-prop-group" id="shapeLineDashGroup" style="display:none">
+        <select id="shapeLineDash">
+          <option value="solid">Solid</option>
+          <option value="dashed">Dashed</option>
+          <option value="dotted">Dotted</option>
+          <option value="dashdot">Dash-dot</option>
+        </select>
+      </span>
       <span class="shape-prop-group" id="shapeFontSizeGroup" style="display:none"><label>Size</label><input type="number" id="shapeFontSize" value="28" min="8" max="200" style="width:44px"></span>
       <span class="shape-prop-group" id="shapeBgGroup" style="display:none"><label>Bg</label><input type="color" id="shapeBgColor" value="#000000"><input type="range" id="shapeBgOpacity" min="0" max="1" step="0.05" value="0" style="width:48px"><label class="opacity-label" id="shapeBgOpacityLabel">0%</label></span>
       <span class="shape-prop-group" id="shapeFontGroup" style="display:none">
@@ -2053,7 +2119,10 @@
         <button class="shape-dir-btn" data-dir="ltr" title="Left to right"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><line x1="4" y1="7" x2="10" y2="7"/></svg></button>
         <button class="shape-dir-btn" data-dir="rtl" title="Right to left"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9 7 4 12 9 17"/><line x1="14" y1="7" x2="20" y2="7"/></svg></button>
       </span>
-      <span class="shape-prop-group"><label>Rot</label><input type="number" id="shapeRotation" value="0" min="-360" max="360" style="width:44px"></span>
+      <span class="shape-prop-group" id="shapeImageSrcGroup" style="display:none">
+        <button id="shapeImageBrowseBtn" title="Browse files">Browse</button>
+      </span>
+      <span class="shape-prop-group"><label>Rot</label><input type="range" id="shapeRotationSlider" min="-360" max="360" value="0" style="width:60px"><input type="number" id="shapeRotation" value="0" min="-360" max="360" style="width:44px"></span>
       <button id="shapeZFrontBtn" class="shape-z-btn" title="Bring to front">&#9650;</button>
       <button id="shapeZBackBtn" class="shape-z-btn" title="Send to back">&#9660;</button>
       <button id="shapeDelBtn" class="shape-del-btn" title="Delete shape">&#10005;</button>
@@ -3568,6 +3637,11 @@
       }
       if (e.key === 'Escape') {
         if (ctxMenu.classList.contains('show') || ctxShapeMenu.classList.contains('show')) hideCtxMenu();
+        if (lineDrawState) {
+          if (lineDrawState.tempEl) lineDrawState.tempEl.remove();
+          lineDrawState = null;
+          slides[current].style.cursor = '';
+        }
       }
     });
 
@@ -4240,14 +4314,46 @@
     let slideShapes = {};
     let selectedShapeEl = null;
     let shapeDragState = null;
+    let lineDrawState = null;
+
+    function finishLineDraw() {
+      if (!lineDrawState || !lineDrawState.active) return;
+      const { type, x1, y1, x2, y2, tempEl } = lineDrawState;
+      if (tempEl) tempEl.remove();
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 0.5) { lineDrawState = null; slides[current].style.cursor = ''; return; }
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      if (!slideShapes[current]) slideShapes[current] = [];
+      const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      const shape = {
+        id, type,
+        x: x1 + '%',
+        y: y1 + '%',
+        w: dist + '%',
+        h: '0.3%',
+        rotation: angle,
+        fill: 'transparent', stroke: '#6366f1', strokeWidth: 3,
+        fillOpacity: 1, strokeOpacity: 1,
+        text: '', fontSize: 14, color: '#ffffff', fontFamily: 'Poppins', textAlign: 'center'
+      };
+      slideShapes[current].push(shape);
+      renderShapes(current);
+      const el = slides[current].querySelector('.shape[data-shape-id="' + id + '"]');
+      if (el) selectShape(el);
+      saveToServer();
+      lineDrawState = null;
+      slides[current].style.cursor = '';
+    }
 
     function getDefaultShape(type) {
       const base = { x: '25%', y: '20%', w: '20%', h: '20%', rotation: 0, fill: 'transparent', stroke: '#6366f1', strokeWidth: 2, fillOpacity: 1, strokeOpacity: 1, text: '', fontSize: 14, color: '#ffffff', fontFamily: 'Poppins', textAlign: 'center' };
       switch (type) {
         case 'rect': return { ...base, type: 'rect' };
         case 'circle': return { ...base, type: 'circle' };
-        case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
-        case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3 };
+        case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' };
+        case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' };
         case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0 };
         case 'image': return { ...base, type: 'image', w: '25%', h: '25%', src: '', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0 };
         default: return { ...base, type: 'rect' };
@@ -4274,10 +4380,28 @@
         el.style.borderWidth = (shape.strokeWidth || 0) + 'px';
         el.style.borderRadius = shape.type === 'circle' ? '50%' : '0';
       } else if (shape.type === 'line' || shape.type === 'arrow') {
-        el.style.background = shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent';
+        const lw = shape.lineWeight || 3;
+        const dash = shape.lineDash || 'solid';
+        const fillColor = shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none' ? hexToRgba(shape.fill, shape.fillOpacity) : null;
+        const color = fillColor || (shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent');
+        el.style.height = lw + 'px';
         el.style.border = 'none';
         el.style.borderRadius = '0';
-        if (shape.type === 'arrow') el.style.color = shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent';
+        el.style.transformOrigin = '0 50%';
+        if (dash === 'solid') {
+          el.style.background = color;
+        } else {
+          let grad = '';
+          if (dash === 'dashed') {
+            grad = 'repeating-linear-gradient(90deg, ' + color + ' 0px, ' + color + ' 8px, transparent 8px, transparent 12px)';
+          } else if (dash === 'dotted') {
+            grad = 'repeating-linear-gradient(90deg, ' + color + ' 0px, ' + color + ' 2px, transparent 2px, transparent 6px)';
+          } else if (dash === 'dashdot') {
+            grad = 'repeating-linear-gradient(90deg, ' + color + ' 0px, ' + color + ' 6px, transparent 6px, transparent 10px, ' + color + ' 10px, ' + color + ' 12px, transparent 12px, transparent 16px)';
+          }
+          el.style.background = grad;
+        }
+        if (shape.type === 'arrow') el.style.color = color;
       } else if (shape.type === 'text') {
         let label = el.querySelector('.shape-label');
         if (!label) {
@@ -4349,14 +4473,23 @@
       if (shape.type === 'text') {
         el.spellcheck = false;
       }
-      ['nw','n','ne','e','se','s','sw','w'].forEach(dir => {
-        const h = document.createElement('div');
-        h.className = 'resize-handle ' + dir;
-        el.appendChild(h);
-      });
-      const rotH = document.createElement('div');
-      rotH.className = 'rot-handle';
-      el.appendChild(rotH);
+      if (shape.type === 'line' || shape.type === 'arrow') {
+        const startH = document.createElement('div');
+        startH.className = 'line-handle start';
+        el.appendChild(startH);
+        const endH = document.createElement('div');
+        endH.className = 'line-handle end';
+        el.appendChild(endH);
+      } else {
+        ['nw','n','ne','e','se','s','sw','w'].forEach(dir => {
+          const h = document.createElement('div');
+          h.className = 'resize-handle ' + dir;
+          el.appendChild(h);
+        });
+        const rotH = document.createElement('div');
+        rotH.className = 'rot-handle';
+        el.appendChild(rotH);
+      }
       return el;
     }
 
@@ -4430,6 +4563,7 @@
     const shapeStrokeOpacityLabel = document.getElementById('shapeStrokeOpacityLabel');
     const shapeStrokeWidth = document.getElementById('shapeStrokeWidth');
     const shapeRotation = document.getElementById('shapeRotation');
+    const shapeRotationSlider = document.getElementById('shapeRotationSlider');
     const shapeDelBtn = document.getElementById('shapeDelBtn');
     const shapeFontSize = document.getElementById('shapeFontSize');
     const shapeFontFamily = document.getElementById('shapeFontFamily');
@@ -4447,6 +4581,9 @@
     const shapeBgColor = document.getElementById('shapeBgColor');
     const shapeBgOpacity = document.getElementById('shapeBgOpacity');
     const shapeBgOpacityLabel = document.getElementById('shapeBgOpacityLabel');
+    const shapeLineWeight = document.getElementById('shapeLineWeight');
+    const shapeLineWeightSlider = document.getElementById('shapeLineWeightSlider');
+    const shapeLineDash = document.getElementById('shapeLineDash');
 
     function showShapeProps() {
       const shape = selectedShapeEl ? getShapeById(
@@ -4484,6 +4621,8 @@
         const dir = shape.direction || 'ltr';
         shapeDirBtns.forEach(b => b.classList.toggle('active', b.dataset.dir === dir));
       } else if (shape.type === 'image') {
+        const fillGrp = shapeFill.closest('.shape-prop-group');
+        if (fillGrp) fillGrp.style.display = 'none';
         strokeGrp.style.display = 'none';
         swGrp.style.display = 'none';
         fillOpGrp.style.display = 'none';
@@ -4494,6 +4633,12 @@
         shapeAlignGroup.style.display = 'none';
         shapeDirGroup.style.display = 'none';
         shapeBgGroup.style.display = 'none';
+        const imgSrcGroup = document.getElementById('shapeImageSrcGroup');
+        if (imgSrcGroup) {
+          imgSrcGroup.style.display = '';
+          const srcInput = document.getElementById('shapeImageSrc');
+          if (srcInput) srcInput.value = shape.src || '';
+        }
       } else {
         const isLine = shape.type === 'line' || shape.type === 'arrow';
         shapeFill.value = (shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none') ? shape.fill : '#6366f1';
@@ -4503,18 +4648,32 @@
         shapeStrokeOpacity.value = shape.strokeOpacity == null ? 1 : shape.strokeOpacity;
         shapeStrokeOpacityLabel.textContent = Math.round((shape.strokeOpacity == null ? 1 : shape.strokeOpacity) * 100) + '%';
         shapeStrokeWidth.value = shape.strokeWidth || 2;
-        strokeGrp.style.display = '';
-        swGrp.style.display = '';
+        strokeGrp.style.display = isLine ? 'none' : '';
+        swGrp.style.display = isLine ? 'none' : '';
         fillOpGrp.style.display = isLine ? 'none' : '';
-        strokeOpGrp.style.display = '';
+        strokeOpGrp.style.display = isLine ? 'none' : '';
         shapeFontSizeGroup.style.display = 'none';
         shapeFontGroup.style.display = 'none';
         shapeFormatGroup.style.display = 'none';
         shapeAlignGroup.style.display = 'none';
         shapeDirGroup.style.display = 'none';
         shapeBgGroup.style.display = 'none';
+        const lwGrp = document.getElementById('shapeLineWeightGroup');
+        const ldGrp = document.getElementById('shapeLineDashGroup');
+        lwGrp.style.display = isLine ? '' : 'none';
+        ldGrp.style.display = isLine ? '' : 'none';
+        if (isLine && shapeLineWeight) {
+          const lw = shape.lineWeight || 3;
+          shapeLineWeight.value = lw;
+          if (shapeLineWeightSlider) shapeLineWeightSlider.value = lw;
+        }
+        if (isLine && shapeLineDash) {
+          shapeLineDash.value = shape.lineDash || 'solid';
+        }
       }
-      shapeRotation.value = shape.rotation || 0;
+      const rot = shape.rotation || 0;
+      shapeRotation.value = rot;
+      if (shapeRotationSlider) shapeRotationSlider.value = rot;
       shapeProps.classList.add('show');
     }
 
@@ -4543,12 +4702,19 @@
         shape.direction = activeDir ? activeDir.dataset.dir : 'ltr';
         shape.bgColor = shapeBgColor.value;
         shape.bgOpacity = parseFloat(shapeBgOpacity.value) || 0;
-      } else if (shape.type !== 'image') {
+      } else if (shape.type === 'image') {
+        const srcInput = document.getElementById('shapeImageSrc');
+        if (srcInput) shape.src = srcInput.value;
+      } else {
         shape.fill = shapeFill.value;
         shape.fillOpacity = parseFloat(shapeFillOpacity.value) || 0;
         shape.stroke = shapeStroke.value;
         shape.strokeOpacity = parseFloat(shapeStrokeOpacity.value) || 0;
         shape.strokeWidth = parseFloat(shapeStrokeWidth.value) || 0;
+        if (shape.type === 'line' || shape.type === 'arrow') {
+          shape.lineWeight = parseInt(shapeLineWeight.value) || 3;
+          shape.lineDash = shapeLineDash ? shapeLineDash.value : 'solid';
+        }
       }
       shape.rotation = parseFloat(shapeRotation.value) || 0;
       styleShapeEl(selectedShapeEl, shape);
@@ -4567,6 +4733,18 @@
       updateShapeFromProps();
     });
     shapeStrokeWidth.addEventListener('input', updateShapeFromProps);
+    function syncLineWeight(val) {
+      shapeLineWeight.value = val;
+      if (shapeLineWeightSlider) shapeLineWeightSlider.value = val;
+      updateShapeFromProps();
+    }
+    shapeLineWeight.addEventListener('input', () => syncLineWeight(shapeLineWeight.value));
+    if (shapeLineWeightSlider) {
+      shapeLineWeightSlider.addEventListener('input', () => syncLineWeight(shapeLineWeightSlider.value));
+    }
+    if (shapeLineDash) {
+      shapeLineDash.addEventListener('change', updateShapeFromProps);
+    }
     shapeFontSize.addEventListener('input', updateShapeFromProps);
     shapeFontFamily.addEventListener('change', updateShapeFromProps);
     shapeBgColor.addEventListener('input', updateShapeFromProps);
@@ -4574,8 +4752,61 @@
       shapeBgOpacityLabel.textContent = Math.round(parseFloat(shapeBgOpacity.value) * 100) + '%';
       updateShapeFromProps();
     });
-    shapeRotation.addEventListener('input', updateShapeFromProps);
+    function syncRotation(val) {
+      shapeRotation.value = val;
+      if (shapeRotationSlider) shapeRotationSlider.value = val;
+      updateShapeFromProps();
+    }
+    shapeRotation.addEventListener('input', () => syncRotation(shapeRotation.value));
+    if (shapeRotationSlider) {
+      shapeRotationSlider.addEventListener('input', () => syncRotation(shapeRotationSlider.value));
+    }
     shapeDelBtn.addEventListener('click', deleteSelectedShape);
+
+    const shapeImageSrc = document.getElementById('shapeImageSrc');
+    const shapeImageBrowseBtn = document.getElementById('shapeImageBrowseBtn');
+    if (shapeImageSrc) {
+      shapeImageSrc.addEventListener('change', updateShapeFromProps);
+      shapeImageSrc.addEventListener('input', updateShapeFromProps);
+    }
+    if (shapeImageBrowseBtn) {
+      shapeImageBrowseBtn.addEventListener('click', () => {
+        let hiddenInput = document.getElementById('shapeImageInput');
+        if (!hiddenInput) {
+          hiddenInput = document.createElement('input');
+          hiddenInput.id = 'shapeImageInput';
+          hiddenInput.type = 'file';
+          hiddenInput.accept = 'image/*';
+          hiddenInput.style.display = 'none';
+          hiddenInput.addEventListener('change', async function() {
+            const file = this.files && this.files[0];
+            if (!file) return;
+            const sid = this.dataset.shapeId;
+            const sIdx = parseInt(this.dataset.slideIdx);
+            if (!sid || isNaN(sIdx)) return;
+            try {
+              const url = await uploadImage(file);
+              const el = document.querySelector('.shape[data-shape-id="' + sid + '"]');
+              const sh = getShapeById(sIdx, sid);
+              if (el && sh) {
+                sh.src = url;
+                styleShapeEl(el, sh);
+                const srcInput = document.getElementById('shapeImageSrc');
+                if (srcInput) srcInput.value = url;
+                saveToServer();
+              }
+            } catch (err) {
+              showToast('Failed to upload image');
+            }
+            this.value = '';
+          });
+          document.body.appendChild(hiddenInput);
+        }
+        hiddenInput.dataset.shapeId = selectedShapeEl ? selectedShapeEl.dataset.shapeId : '';
+        hiddenInput.dataset.slideIdx = selectedShapeEl ? selectedShapeEl.closest('.slide').dataset.slide : '';
+        hiddenInput.click();
+      });
+    }
 
     const shapeZFrontBtn = document.getElementById('shapeZFrontBtn');
     const shapeZBackBtn = document.getElementById('shapeZBackBtn');
@@ -4627,6 +4858,40 @@
 
     // Container-level delegation for shape mouse events
     container.addEventListener('mousedown', (e) => {
+      if (lineDrawState) {
+        if (e.button !== 0) return;
+        if (document.documentElement.classList.contains('fullscreen')) return;
+        const sr = slides[current].getBoundingClientRect();
+        const xPct = (e.clientX - sr.left) / sr.width * 100;
+        const yPct = (e.clientY - sr.top) / sr.height * 100;
+        if (!lineDrawState.active) {
+          lineDrawState.x1 = xPct;
+          lineDrawState.y1 = yPct;
+          lineDrawState.x2 = xPct;
+          lineDrawState.y2 = yPct;
+          lineDrawState.active = true;
+          lineDrawState.tempEl = document.createElement('div');
+          lineDrawState.tempEl.className = 'shape shape-' + lineDrawState.type;
+          lineDrawState.tempEl.style.pointerEvents = 'none';
+          lineDrawState.tempEl.style.opacity = '0.6';
+          lineDrawState.tempEl.style.border = 'none';
+          lineDrawState.tempEl.style.background = '#6366f1';
+          lineDrawState.tempEl.style.borderRadius = '0';
+          lineDrawState.tempEl.style.transformOrigin = '0 50%';
+          if (lineDrawState.type === 'arrow') {
+            lineDrawState.tempEl.style.color = '#6366f1';
+            const head = document.createElement('div');
+            head.style.cssText = 'position:absolute;right:-1px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:8px solid transparent;border-bottom:8px solid transparent;border-left:12px solid currentColor;pointer-events:none';
+            lineDrawState.tempEl.appendChild(head);
+          }
+          slides[current].appendChild(lineDrawState.tempEl);
+        }
+        lineDrawState.x2 = xPct;
+        lineDrawState.y2 = yPct;
+        e.stopPropagation();
+        return;
+      }
+
       const shapeEl = e.target.closest('.shape');
       if (!shapeEl) return;
       if (document.documentElement.classList.contains('fullscreen')) return;
@@ -4634,10 +4899,33 @@
 
       const isHandle = e.target.classList.contains('resize-handle');
       const isRotate = e.target.classList.contains('rot-handle');
+      const isLineHandle = e.target.classList.contains('line-handle');
       const slideIdx = parseInt(shapeEl.closest('.slide').dataset.slide);
       if (slideIdx !== current) return;
       const shape = getShapeById(slideIdx, shapeEl.dataset.shapeId);
       if (!shape) return;
+      if (isLineHandle && (shape.type === 'line' || shape.type === 'arrow')) {
+        e.stopPropagation();
+        e.preventDefault();
+        const sr = slides[current].getBoundingClientRect();
+        const xPct = (e.clientX - sr.left) / sr.width * 100;
+        const yPct = (e.clientY - sr.top) / sr.height * 100;
+        shapeDragState = {
+          shapeId: shape.id,
+          idx: slideIdx,
+          handle: 'line-' + (e.target.classList.contains('end') ? 'end' : 'start'),
+          startX: e.clientX,
+          startY: e.clientY,
+          startL: parseFloat(shape.x),
+          startT: parseFloat(shape.y),
+          startW: parseFloat(shape.w),
+          startH: parseFloat(shape.h),
+          startRotation: shape.rotation || 0,
+          startMX: xPct,
+          startMY: yPct
+        };
+        return;
+      }
 
       if (isRotate) {
         e.stopPropagation();
@@ -4662,18 +4950,20 @@
         e.stopPropagation();
         e.preventDefault();
         const handleDir = e.target.className.replace('resize-handle ', '');
-        const rect = shapeEl.getBoundingClientRect();
-        const cr = shapeEl.closest('.slide').getBoundingClientRect();
+        const sl = shapeEl.offsetLeft;
+        const st = shapeEl.offsetTop;
+        const sw2 = shapeEl.offsetWidth;
+        const sh2 = shapeEl.offsetHeight;
         shapeDragState = {
           shapeId: shape.id,
           idx: slideIdx,
           handle: handleDir,
           startX: e.clientX,
           startY: e.clientY,
-          startL: rect.left - cr.left,
-          startT: rect.top - cr.top,
-          startW: rect.width,
-          startH: rect.height
+          startL: sl,
+          startT: st,
+          startW: sw2,
+          startH: sh2
         };
         return;
       }
@@ -4686,18 +4976,20 @@
         if (lbl && lbl.contentEditable === 'true') return;
       }
 
-      const rect = shapeEl.getBoundingClientRect();
-      const cr = shapeEl.closest('.slide').getBoundingClientRect();
+      const sl = shapeEl.offsetLeft;
+      const st = shapeEl.offsetTop;
+      const sw2 = shapeEl.offsetWidth;
+      const sh2 = shapeEl.offsetHeight;
       shapeDragState = {
         shapeId: shape.id,
         idx: slideIdx,
         handle: 'move',
         startX: e.clientX,
         startY: e.clientY,
-        startL: rect.left - cr.left,
-        startT: rect.top - cr.top,
-        startW: rect.width,
-        startH: rect.height,
+        startL: sl,
+        startT: st,
+        startW: sw2,
+        startH: sh2,
         active: false
       };
     });
@@ -4748,6 +5040,8 @@
               if (el && sh) {
                 sh.src = url;
                 styleShapeEl(el, sh);
+                const srcInput = document.getElementById('shapeImageSrc');
+                if (srcInput) srcInput.value = url;
                 saveToServer();
               }
             } catch (err) {
@@ -4825,6 +5119,24 @@
 
     // Shape drag/resize handlers
     document.addEventListener('mousemove', (e) => {
+      if (lineDrawState && lineDrawState.active && lineDrawState.tempEl) {
+        const sr = slides[current].getBoundingClientRect();
+        const xPct = (e.clientX - sr.left) / sr.width * 100;
+        const yPct = (e.clientY - sr.top) / sr.height * 100;
+        lineDrawState.x2 = xPct;
+        lineDrawState.y2 = yPct;
+        const dx = xPct - lineDrawState.x1;
+        const dy = yPct - lineDrawState.y1;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const el = lineDrawState.tempEl;
+        el.style.left = lineDrawState.x1 + '%';
+        el.style.top = lineDrawState.y1 + '%';
+        el.style.width = dist + '%';
+        el.style.height = '3px';
+        el.style.transform = 'rotate(' + angle + 'deg)';
+        return;
+      }
       if (!shapeDragState) return;
       if (shapeDragState.idx !== current) { shapeDragState = null; return; }
       const slideEl = slides[shapeDragState.idx];
@@ -4840,6 +5152,34 @@
         const rot = (shapeDragState.startRotation + deg) % 360;
         const snapped = Math.round(rot / 15) * 15;
         shapeEl.style.transform = 'rotate(' + snapped + 'deg)';
+        return;
+      }
+
+      if (h === 'line-end' || h === 'line-start') {
+        const sr = slides[shapeDragState.idx].getBoundingClientRect();
+        const mxPct = (e.clientX - sr.left) / sr.width * 100;
+        const myPct = (e.clientY - sr.top) / sr.height * 100;
+        let x1, y1, x2, y2;
+        if (h === 'line-end') {
+          x1 = shapeDragState.startL;
+          y1 = shapeDragState.startT;
+          x2 = mxPct;
+          y2 = myPct;
+        } else {
+          const angleRad = shapeDragState.startRotation * Math.PI / 180;
+          x2 = shapeDragState.startL + shapeDragState.startW * Math.cos(angleRad);
+          y2 = shapeDragState.startT + shapeDragState.startW * Math.sin(angleRad);
+          x1 = mxPct;
+          y1 = myPct;
+        }
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+        shapeEl.style.left = x1 + '%';
+        shapeEl.style.top = y1 + '%';
+        shapeEl.style.width = Math.max(dist, 0.1) + '%';
+        shapeEl.style.transform = 'rotate(' + angleDeg + 'deg)';
         return;
       }
 
@@ -4877,6 +5217,10 @@
     });
 
     document.addEventListener('mouseup', () => {
+      if (lineDrawState && lineDrawState.active) {
+        finishLineDraw();
+        return;
+      }
       if (!shapeDragState) return;
       if (shapeDragState.idx !== current) { shapeDragState = null; return; }
       const slideEl = slides[shapeDragState.idx];
@@ -4891,16 +5235,27 @@
         if (match) {
           shape.rotation = parseFloat(match[1]) || 0;
           shapeRotation.value = shape.rotation;
+          if (shapeRotationSlider) shapeRotationSlider.value = shape.rotation;
         }
+      } else if (shapeDragState.handle === 'line-start' || shapeDragState.handle === 'line-end') {
+        const sw = slideEl.offsetWidth;
+        const sh = slideEl.offsetHeight;
+        shape.x = (shapeEl.offsetLeft / sw * 100) + '%';
+        shape.y = (shapeEl.offsetTop / sh * 100) + '%';
+        shape.w = (shapeEl.offsetWidth / sw * 100) + '%';
+        const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/);
+        shape.rotation = match ? parseFloat(match[1]) : 0;
+        shapeEl.style.left = shape.x;
+        shapeEl.style.top = shape.y;
+        shapeEl.style.width = shape.w;
+        shapeEl.style.transform = shape.rotation ? 'rotate(' + shape.rotation + 'deg)' : '';
       } else {
         const sw = slideEl.offsetWidth;
         const sh = slideEl.offsetHeight;
-        const wr = shapeEl.getBoundingClientRect();
-        const sr = slideEl.getBoundingClientRect();
-        shape.x = ((wr.left - sr.left) / sw * 100) + '%';
-        shape.y = ((wr.top - sr.top) / sh * 100) + '%';
-        shape.w = (wr.width / sw * 100) + '%';
-        shape.h = (wr.height / sh * 100) + '%';
+        shape.x = (shapeEl.offsetLeft / sw * 100) + '%';
+        shape.y = (shapeEl.offsetTop / sh * 100) + '%';
+        shape.w = (shapeEl.offsetWidth / sw * 100) + '%';
+        shape.h = (shapeEl.offsetHeight / sh * 100) + '%';
         shapeEl.style.left = shape.x;
         shapeEl.style.top = shape.y;
         shapeEl.style.width = shape.w;
@@ -4921,7 +5276,19 @@
     shapePopup.querySelectorAll('.shape-popup-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        addShapeToSlide(btn.dataset.shape);
+        const type = btn.dataset.shape;
+        if (type === 'line' || type === 'arrow') {
+          lineDrawState = { type, active: false };
+          if (selectedShapeEl) {
+            selectedShapeEl.classList.remove('selected');
+            selectedShapeEl = null;
+            hideShapeProps();
+          }
+          slides[current].style.cursor = 'crosshair';
+          shapePopup.classList.remove('show');
+          return;
+        }
+        addShapeToSlide(type);
         shapePopup.classList.remove('show');
       });
     });
