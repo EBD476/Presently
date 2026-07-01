@@ -3626,14 +3626,19 @@
           showToast('Shape pasted', 'success');
         }
       }
-      if (e.key === 'l' || e.key === 'L') {
+      if ((e.key === 'l' || e.key === 'L') && document.documentElement.classList.contains('fullscreen')) {
         e.preventDefault();
         if (!laserMode && drawMode) toggleDrawMode(false);
         toggleLaserMode(!laserMode);
       }
-      if (e.key === 'p' || e.key === 'P') {
+      if ((e.key === 'p' || e.key === 'P') && document.documentElement.classList.contains('fullscreen')) {
         e.preventDefault();
         togglePresenterMode(!presenterMode);
+      }
+      if ((e.key === 'd' || e.key === 'D') && document.documentElement.classList.contains('fullscreen')) {
+        e.preventDefault();
+        if (!drawMode && laserMode) toggleLaserMode(false);
+        toggleDrawMode(!drawMode);
       }
       if (e.key === 'Escape') {
         if (ctxMenu.classList.contains('show') || ctxShapeMenu.classList.contains('show')) hideCtxMenu();
@@ -4139,6 +4144,7 @@
     }
 
     laserToggleBtn.addEventListener('click', () => {
+      if (!document.documentElement.classList.contains('fullscreen')) return;
       if (!laserMode && drawMode) toggleDrawMode(false);
       toggleLaserMode(!laserMode);
     });
@@ -4244,6 +4250,7 @@
     }
 
     presenterBtn.addEventListener('click', () => {
+      if (!document.documentElement.classList.contains('fullscreen')) return;
       togglePresenterMode(!presenterMode);
     });
 
