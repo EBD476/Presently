@@ -512,6 +512,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
 
 function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu, updateShape }) {
   const elRef = useRef(null)
+  const labelRef = useRef(null)
 
   let style = {
     left: shape.x, top: shape.y, width: shape.w, height: shape.h,
@@ -599,6 +600,45 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
     return () => ro.disconnect()
   }, [shape.x, shape.y, shape.w, shape.ex, shape.ey, shape.rotation, shape.type, shape.id, updateShape])
 
+  useLayoutEffect(() => {
+    const label = labelRef.current
+    const el = elRef.current
+    if (!label || !el) return
+    if (shape.type === 'line' || shape.type === 'arrow' || shape.type === 'image') return
+
+    const fit = () => {
+      const maxSize = shape.fontSize || (shape.type === 'text' ? 28 : 14)
+      const pw = el.offsetWidth
+      const ph = el.offsetHeight
+      if (!pw || !ph) return
+
+      label.style.fontSize = maxSize + 'px'
+
+      if (label.scrollWidth > pw || label.scrollHeight > ph) {
+        let lo = 6
+        let hi = maxSize
+        let best = hi
+        while (lo <= hi) {
+          const mid = Math.round((lo + hi) / 2)
+          label.style.fontSize = mid + 'px'
+          if (label.scrollWidth <= pw && label.scrollHeight <= ph) {
+            best = mid
+            lo = mid + 1
+          } else {
+            hi = mid - 1
+          }
+        }
+        label.style.fontSize = best + 'px'
+      }
+    }
+
+    fit()
+
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [shape.text, shape.fontSize, shape.w, shape.h, shape.type])
+
   return (
     <div ref={elRef}
       className={'shape shape-' + shape.type + (isSelected ? ' selected' : '')}
@@ -608,7 +648,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}>
       {shape.type === 'text' && (
-        <div className="shape-label"
+        <div ref={labelRef} className="shape-label"
           style={{
             color: shape.color || '#ffffff',
             fontSize: (shape.fontSize || 28) + 'px',
@@ -635,7 +675,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
         )
       )}
       {(shape.type === 'rect' || shape.type === 'circle') && shape.text && (
-        <div className="shape-label"
+        <div ref={labelRef} className="shape-label"
           style={{
             color: shape.color || '#ffffff',
             fontSize: (shape.fontSize || 14) + 'px',
