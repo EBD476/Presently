@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react'
 import { useSearchParams,useNavigate  } from 'react-router-dom'
 import { SlideshowProvider, useSlideshow } from '../context/SlideshowContext'
 import { useToast } from '../components/Toast'
@@ -25,7 +25,7 @@ function SlideshowEditor() {
     slideMode, setSlideMode, slideNames, setSlideNames,
     slideBgColors, slideNotes, setSlideNotes,
     slideShapes, setSlideShapes, loading,
-    drawData, setDrawData,
+    drawData, setDrawData, drawDataRef,
     loadDeck, save, goTo, next, prev,
     duplicateSlide
   } = useSlideshow()
@@ -40,6 +40,10 @@ function SlideshowEditor() {
   const [lineDrawState, setLineDrawState] = useState(null)
   const [shapePopupOpen, setShapePopupOpen] = useState(false)
   const [showUrlBarFor, setShowUrlBarFor] = useState(null)
+  const notesRef = useRef(null)
+  const [timerSeconds, setTimerSeconds] = useState(0)
+  const [timerRunning, setTimerRunning] = useState(false)
+  const timerIntervalRef = useRef(null)
   const [urlBarValue, setUrlBarValue] = useState('')
   const urlBarRef = useRef(null)
   const [ctxMenuPos, setCtxMenuPos] = useState(null)
@@ -47,6 +51,10 @@ function SlideshowEditor() {
   const [ctxSlideIdx, setCtxSlideIdx] = useState(-1)
   const [ctxShapeData, setCtxShapeData] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
+  const [drawColor, setDrawColor] = useState('#ff4444')
+  const [drawSize, setDrawSize] = useState(4)
+  const drawColorRef = useRef('#ff4444')
+  const drawSizeRef = useRef(4)
   const drawCanvasRef = useRef(null)
   const drawCtxRef = useRef(null)
   const laserCanvasRef = useRef(null)
@@ -54,18 +62,16 @@ function SlideshowEditor() {
   const laserPointsRef = useRef([])
   const laserRafRef = useRef(null)
   const shapeClipboardRef = useRef(null)
+  const currentRef = useRef(current)
+  useEffect(() => { currentRef.current = current })
+  const saveRef = useRef(save)
+  useLayoutEffect(() => { saveRef.current = save })
 
   useEffect(() => {
     const name = deckParam || localStorage.getItem('deckName') || 'Default'
     if (deckParam) localStorage.setItem('deckName', name)
     loadDeck(name)
   }, [deckParam])
-
-  useEffect(() => {
-    if (loading) return
-    const el = document.querySelector('.skeleton-slide')
-    if (el) el.classList.add('skeleton-hidden')
-  }, [loading])
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -76,7 +82,7 @@ function SlideshowEditor() {
       const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowDown', 'PageUp', 'PageDown', ' ']
       const isInPresenterNotes = document.activeElement?.id === 'presenterNotes'
       const isContentEditable = document.activeElement?.isContentEditable
-      if (isInPresenterNotes && navKeys.includes(e.key)) return
+      if (isInPresenterNotes) return
       if (isContentEditable) {
         if (navKeys.includes(e.key) || e.key === 'Delete' || e.key === 'Backspace') return
       }
@@ -85,6 +91,26 @@ function SlideshowEditor() {
       if (e.key === 'Home') { e.preventDefault(); goTo(0) }
       if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1) }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); /* undo delete image */ }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (!selectedShapeId) return
+        const shapes = slideShapes[current] || []
+        const shape = shapes.find(s => s.id === selectedShapeId)
+        if (shape) { shapeClipboardRef.current = JSON.parse(JSON.stringify(shape)); showToast('Shape copied', 'success') }
+        e.preventDefault()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (!shapeClipboardRef.current) return
+        const newId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+        const ps = JSON.parse(JSON.stringify(shapeClipboardRef.current))
+        ps.id = newId; ps.x = parseFloat(ps.x) + 2 + '%'; ps.y = parseFloat(ps.y) + 2 + '%'
+        if (ps.ex) ps.ex = parseFloat(ps.ex) + 2 + '%'
+        if (ps.ey) ps.ey = parseFloat(ps.ey) + 2 + '%'
+        setSlideShapes(prev => { const s = { ...prev }; s[current] = [...(s[current] || []), ps]; return s })
+        setSelectedShapeId(newId)
+        setTimeout(() => saveRef.current(), 0)
+        showToast('Shape pasted', 'success')
+        e.preventDefault()
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSlide(current) }
       if (e.key === 'Escape') {
         setCtxMenuPos(null); setCtxShapeMenuPos(null)
@@ -97,13 +123,23 @@ function SlideshowEditor() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [settingsVisible, slides.length, current, fullscreen, laserMode, drawMode, presenterMode, prev, next, goTo, lineDrawState, duplicateSlide])
+  }, [settingsVisible, slides.length, current, fullscreen, laserMode, drawMode, presenterMode, prev, next, goTo, lineDrawState, duplicateSlide, slideShapes, selectedShapeId, setSlideShapes, showToast, setSelectedShapeId])
 
   useEffect(() => {
     const onFullscreenChange = () => {
       const isFull = !!document.fullscreenElement
       setFullscreen(isFull)
-      if (!isFull) { setDrawMode(false); setLaserMode(false); setPresenterMode(false) }
+      if (isFull) { setSidebarCollapsed(true) }
+      if (!isFull) {
+        setSidebarCollapsed(false); setDrawMode(false); setLaserMode(false); setPresenterMode(false)
+        const canvas = drawCanvasRef.current
+        if (canvas) {
+          const ctx = canvas.getContext('2d')
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
+        setDrawData(prev => { const d = { ...prev }; delete d[currentRef.current]; return d })
+        setTimeout(() => saveRef.current(), 0)
+      }
     }
     document.addEventListener('fullscreenchange', onFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
@@ -125,12 +161,24 @@ function SlideshowEditor() {
         const serverUrl = await uploadImage(file)
         setSlideUrls(prev => ({ ...prev, [current]: serverUrl }))
         setResizeData(prev => { const n = { ...prev }; delete n[current]; return n })
-        setTimeout(() => save(), 0)
+        setTimeout(() => saveRef.current(), 0)
       } catch (_) { showToast('Failed to paste image') }
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
   }, [current, setSlideUrls, setResizeData, save, showToast])
+
+  // Timer interval
+  useEffect(() => {
+    if (!timerRunning) { if (timerIntervalRef.current) { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null } return }
+    timerIntervalRef.current = setInterval(() => setTimerSeconds(s => s + 1), 1000)
+    return () => { if (timerIntervalRef.current) { clearInterval(timerIntervalRef.current); timerIntervalRef.current = null } }
+  }, [timerRunning])
+
+  // Sync notes textarea when slide changes
+  useEffect(() => {
+    if (notesRef.current) notesRef.current.value = slideNotes[current] || ''
+  }, [current, slideNotes])
 
   // Drawing canvas
   useEffect(() => {
@@ -153,13 +201,15 @@ function SlideshowEditor() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const data = drawData[current]
       if (!data) return
+      const cw = canvas.width, ch = canvas.height
       data.forEach(stroke => {
         ctx.strokeStyle = stroke.color
         ctx.lineWidth = stroke.size
         ctx.beginPath()
         stroke.points.forEach((p, i) => {
-          if (i === 0) ctx.moveTo(p.x, p.y)
-          else ctx.lineTo(p.x, p.y)
+          const x = p.x / 100 * cw, y = p.y / 100 * ch
+          if (i === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
         })
         ctx.stroke()
       })
@@ -168,7 +218,7 @@ function SlideshowEditor() {
     resize()
     window.addEventListener('resize', resize)
     return () => window.removeEventListener('resize', resize)
-  }, [drawData, current])
+  }, [drawData, current, fullscreen])
 
   useEffect(() => {
     const canvas = drawCanvasRef.current
@@ -180,8 +230,10 @@ function SlideshowEditor() {
       const rect = containerRef.current.getBoundingClientRect()
       const clientX = e.touches ? e.touches[0].clientX : e.clientX
       const clientY = e.touches ? e.touches[0].clientY : e.clientY
-      return { x: clientX - rect.left, y: clientY - rect.top }
+      return { x: (clientX - rect.left) / rect.width * 100, y: (clientY - rect.top) / rect.height * 100 }
     }
+
+    const toPx = (pct, dim) => pct / 100 * dim
 
     const onMouseDown = (e) => {
       if (!drawMode) return
@@ -189,13 +241,13 @@ function SlideshowEditor() {
       const pos = getPos(e)
       setDrawData(prev => {
         const d = { ...prev }
-        d[current] = [...(d[current] || []), { color: '#ff4444', size: 4, points: [pos] }]
+        d[current] = [...(d[current] || []), { color: drawColorRef.current, size: drawSizeRef.current, points: [pos] }]
         return d
       })
-      ctx.strokeStyle = '#ff4444'
-      ctx.lineWidth = 4
+      ctx.strokeStyle = drawColorRef.current
+      ctx.lineWidth = drawSizeRef.current
       ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
+      ctx.moveTo(toPx(pos.x, canvas.width), toPx(pos.y, canvas.height))
     }
 
     const onMouseMove = (e) => {
@@ -209,10 +261,10 @@ function SlideshowEditor() {
         d[current] = strokes
         return d
       })
-      ctx.lineTo(pos.x, pos.y)
+      ctx.lineTo(toPx(pos.x, canvas.width), toPx(pos.y, canvas.height))
       ctx.stroke()
       ctx.beginPath()
-      ctx.moveTo(pos.x, pos.y)
+      ctx.moveTo(toPx(pos.x, canvas.width), toPx(pos.y, canvas.height))
     }
 
     const onMouseUp = () => { drawing = false; ctx.beginPath() }
@@ -245,7 +297,7 @@ function SlideshowEditor() {
     resize()
     window.addEventListener('resize', resize)
     return () => window.removeEventListener('resize', resize)
-  }, [])
+  }, [fullscreen])
 
   useEffect(() => {
     if (!laserMode) {
@@ -327,14 +379,23 @@ function SlideshowEditor() {
 
   const handleContainerClick = useCallback((e) => {
     if (e.target.closest('.nav-arrow') || e.target.closest('.dot')) return
+    if (e.target.closest('.shape-props')) return
+    if (e.target.closest('.shape-popup')) return
+    if (e.target.closest('.ctx-menu')) return
     const shapeEl = e.target.closest('.shape')
-    if (shapeEl) return
+    if (shapeEl) {
+      document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
+      return
+    }
     const wrap = e.target.closest('.slide-img-wrap')
     if (wrap) {
+      setSelectedShapeId(null)
       document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
       wrap.classList.add('selected')
       return
     }
+    setCtxMenuPos(null)
+    setCtxShapeMenuPos(null)
     setSelectedShapeId(null)
     document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
     document.querySelectorAll('.slide-url-bar.show').forEach(el => el.classList.remove('show'))
@@ -368,14 +429,15 @@ function SlideshowEditor() {
       setShapePopupOpen(false)
       return
     }
+    const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
     setSlideShapes(prev => {
       const s = { ...prev }
-      const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
       s[current] = [...(s[current] || []), { id, ...getDefaultShape(type) }]
       return s
     })
+    setSelectedShapeId(id)
     setShapePopupOpen(false)
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
   }, [current, setSlideShapes, save])
 
   const toggleFullscreen = () => {
@@ -388,12 +450,33 @@ function SlideshowEditor() {
 
   if (loading) {
     return (
-      <div className="slideshow-container" id="slideshow">
-        <div className="skeleton-slide" id="skeletonSlide">
-          <div className="skeleton-slide-box">
-            <div className="skeleton-slide-circle"></div>
-            <div className="skeleton-slide-line"></div>
-            <div className="skeleton-slide-line"></div>
+      <div className="slideshow-page">
+        <div className="sidebar" id="sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-header-left">
+              <div className="skeleton" style={{ width: 18, height: 18, borderRadius: '4px' }}></div>
+              <div className="skeleton" style={{ width: 100, height: 14, borderRadius: '4px', marginLeft: 8 }}></div>
+              <div className="skeleton" style={{ width: 24, height: 14, borderRadius: '4px', marginLeft: 6 }}></div>
+            </div>
+          </div>
+          <div className="sidebar-thumbnails">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="skeleton-thumb">
+                <div className="skeleton-thumb-box"></div>
+                <div className="skeleton-thumb-line"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="main-area">
+          <div className="slideshow-container" id="slideshow">
+            <div className="skeleton-slide" id="skeletonSlide">
+              <div className="skeleton-slide-box">
+                <div className="skeleton-slide-circle"></div>
+                <div className="skeleton-slide-line"></div>
+                <div className="skeleton-slide-line"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -402,8 +485,8 @@ function SlideshowEditor() {
 
   return (
     <>
-     <div className="slideshow-page">
-      <Sidebar />
+     <div className={'slideshow-page' + (fullscreen ? ' fullscreen' : '')}>
+      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(c => !c)} />
       <button className="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"
         onClick={() => setSidebarCollapsed(c => !c)}>&#9776;</button>
 
@@ -428,7 +511,7 @@ function SlideshowEditor() {
                       const serverUrl = await uploadImage(file)
                       setSlideUrls(prev => ({ ...prev, [i]: serverUrl }))
                       setResizeData(prev => { const n = { ...prev }; delete n[i]; return n })
-                      setTimeout(() => save(), 0)
+                      setTimeout(() => saveRef.current(), 0)
                     } catch (_) { showToast('Failed to upload dropped image') }
                   }
                 }}>
@@ -450,7 +533,7 @@ function SlideshowEditor() {
                         if (val) {
                           setSlideUrls(prev => ({ ...prev, [i]: val }))
                           setResizeData(prev => { const n = { ...prev }; delete n[i]; return n })
-                          setTimeout(() => save(), 0)
+                          setTimeout(() => saveRef.current(), 0)
                         }
                         setShowUrlBarFor(null)
                       }
@@ -461,14 +544,15 @@ function SlideshowEditor() {
                     if (val) {
                       setSlideUrls(prev => ({ ...prev, [i]: val }))
                       setResizeData(prev => { const n = { ...prev }; delete n[i]; return n })
-                      setTimeout(() => save(), 0)
+                      setTimeout(() => saveRef.current(), 0)
                     }
                     setShowUrlBarFor(null)
                   }}>Apply</button>
                 </div>
                 <span className="slide-label">{slideNames[i] || 'Slide ' + (i + 1)}</span>
                 <span className="slide-number">{i + 1} / {slides.length}</span>
-                <ShapeLayer slideIndex={i} />
+                <ShapeLayer slideIndex={i} selectedShapeId={selectedShapeId} onShapeSelect={setSelectedShapeId}
+                  lineDrawState={lineDrawState} setLineDrawState={setLineDrawState} />
               </div>
             )
           })}
@@ -483,9 +567,11 @@ function SlideshowEditor() {
           {drawMode && (
             <div className="draw-toolbar show">
               <span className="draw-label">Draw</span>
-              <input type="color" id="drawColor" defaultValue="#ff4444" />
-              <input type="range" id="drawSize" min="1" max="20" defaultValue="4" />
-              <span className="draw-size-label" id="drawSizeLabel">4</span>
+              <input type="color" id="drawColor" value={drawColor}
+                onChange={e => { const v = e.target.value; setDrawColor(v); drawColorRef.current = v }} />
+              <input type="range" id="drawSize" min="1" max="20" value={drawSize}
+                onChange={e => { const v = +e.target.value; setDrawSize(v); drawSizeRef.current = v }} />
+              <span className="draw-size-label" id="drawSizeLabel">{drawSize}</span>
               <button onClick={() => {
                 setDrawData(prev => {
                   const d = { ...prev }
@@ -533,7 +619,7 @@ function SlideshowEditor() {
         <div id="presenterPanel" className="show">
           <div className="presenter-notes-wrap">
             <label htmlFor="presenterNotes">Speaker Notes</label>
-            <textarea id="presenterNotes" placeholder="Notes for this slide..."
+            <textarea ref={notesRef} id="presenterNotes" placeholder="Notes for this slide..."
               defaultValue={slideNotes[current] || ''}
               onChange={(e) => {
                 const val = e.target.value.trim()
@@ -543,17 +629,19 @@ function SlideshowEditor() {
               onBlur={() => setTimeout(() => save(), 800)} />
           </div>
           <div className="presenter-timer-wrap">
-            <div id="presenterTimer">00:00</div>
+            <div id="presenterTimer">{String(Math.floor(timerSeconds / 60)).padStart(2, '0')}:{String(timerSeconds % 60).padStart(2, '0')}</div>
             <div className="presenter-timer-btns">
-              <button id="presenterTimerStart">&#9654;</button>
-              <button id="presenterTimerReset">&#8634;</button>
+              <button id="presenterTimerStart" onClick={() => setTimerRunning(r => !r)}>{timerRunning ? '\u23F8' : '\u25B6'}</button>
+              <button id="presenterTimerReset" onClick={() => { setTimerRunning(false); setTimerSeconds(0) }}>&#8634;</button>
             </div>
           </div>
-          <div className="presenter-next-wrap">
-            <label>Up Next</label>
-            <div id="presenterNextPreview" />
-            <div className="presenter-next-label" id="presenterNextLabel" />
-          </div>
+          {current + 1 < slides.length && (
+            <div className="presenter-next-wrap">
+              <label>Up Next</label>
+              <div id="presenterNextPreview" style={slideUrls[current + 1] ? { backgroundImage: 'url(' + resolveUrl(slideUrls[current + 1]) + ')' } : {}} />
+              <div className="presenter-next-label" id="presenterNextLabel">{slideNames[current + 1] || 'Slide ' + (current + 2)}</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -600,7 +688,7 @@ function SlideshowEditor() {
             const idx = ctxSlideIdx; if (idx < 0 || !slideUrls[idx]) return
             setSlideUrls(prev => { const n = { ...prev }; delete n[idx]; return n })
             setResizeData(prev => { const n = { ...prev }; delete n[idx]; return n })
-            setTimeout(() => save(), 0)
+            setTimeout(() => saveRef.current(), 0)
             setCtxMenuPos(null)
           }}>Remove Image</div>
           <div className="ctx-item" onClick={() => { duplicateSlide(ctxSlideIdx); setCtxMenuPos(null) }}>Duplicate Slide</div>
@@ -611,7 +699,7 @@ function SlideshowEditor() {
               <div key={m} className="ctx-item" onClick={() => {
                 const idx = ctxSlideIdx; if (idx < 0 || !slideUrls[idx]) return
                 setSlideMode(prev => ({ ...prev, [idx]: m }))
-                setTimeout(() => save(), 0)
+                setTimeout(() => saveRef.current(), 0)
                 setCtxMenuPos(null)
               }}>{m.charAt(0).toUpperCase() + m.slice(1)}</div>
             ))}
@@ -631,7 +719,7 @@ function SlideshowEditor() {
                       try {
                         const url = await uploadImage(blob)
                         setSlideUrls(prev => ({ ...prev, [ctxSlideIdx]: url }))
-                        setTimeout(() => save(), 0)
+                        setTimeout(() => saveRef.current(), 0)
                       } catch (_) { showToast('Failed to paste image') }
                     })
                     return
@@ -651,7 +739,7 @@ function SlideshowEditor() {
               setSlideShapes(prev => {
                 const s = { ...prev }; s[ctxSlideIdx] = [...(s[ctxSlideIdx] || []), ps]; return s
               })
-              setTimeout(() => save(), 0)
+              setTimeout(() => saveRef.current(), 0)
               setCtxMenuPos(null)
             }}>Paste Shape</div>
         </div>
@@ -675,7 +763,7 @@ function SlideshowEditor() {
                 return s
               })
               setSelectedShapeId(null)
-              setTimeout(() => save(), 0)
+              setTimeout(() => saveRef.current(), 0)
               showToast('Shape cut', 'success')
             }
             setCtxShapeMenuPos(null)
@@ -691,7 +779,7 @@ function SlideshowEditor() {
               setSlideShapes(prev => {
                 const s = { ...prev }; s[slideIdx] = [...(s[slideIdx] || []), ps]; return s
               })
-              setTimeout(() => save(), 0)
+              setTimeout(() => saveRef.current(), 0)
               setCtxShapeMenuPos(null)
             }}>Paste</div>
           <div className="ctx-divider"></div>
@@ -704,7 +792,7 @@ function SlideshowEditor() {
             setSlideShapes(prev => {
               const s = { ...prev }; s[slideIdx] = [...(s[slideIdx] || []), dup]; return s
             })
-            setTimeout(() => save(), 0)
+            setTimeout(() => saveRef.current(), 0)
             setCtxShapeMenuPos(null)
           }}>Duplicate</div>
           <div className="ctx-item" onClick={() => {
@@ -716,7 +804,7 @@ function SlideshowEditor() {
               return s
             })
             setSelectedShapeId(null)
-            setTimeout(() => save(), 0)
+            setTimeout(() => saveRef.current(), 0)
             setCtxShapeMenuPos(null)
           }}>Delete</div>
         </div>

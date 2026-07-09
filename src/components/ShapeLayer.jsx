@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
 import { useToast } from './Toast'
 import { hexToRgba, getDefaultShape } from '../utils'
@@ -6,13 +6,16 @@ import { resolveUrl, uploadImage } from '../api'
 
 let shapeClipboard = null
 
-export default function ShapeLayer({ slideIndex }) {
+export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect, lineDrawState, setLineDrawState }) {
   const showToast = useToast()
   const { slideShapes, setSlideShapes, save, current } = useSlideshow()
-  const [selectedShapeId, setSelectedShapeId] = useState(null)
   const [shapeDragState, setShapeDragState] = useState(null)
-  const [lineDrawState, setLineDrawState] = useState(null)
   const slideRef = useRef(null)
+  const linePreviewRef = useRef(null)
+  const lineDrawStartRef = useRef(null)
+  const finishingRef = useRef(false)
+  const saveRef = useRef(save)
+  useLayoutEffect(() => { saveRef.current = save })
 
   const shapes = slideShapes[slideIndex] || []
 
@@ -39,9 +42,9 @@ export default function ShapeLayer({ slideIndex }) {
       s[slideIndex] = (s[slideIndex] || []).filter(sh => sh.id !== id)
       return s
     })
-    setSelectedShapeId(null)
-    setTimeout(() => save(), 0)
-  }, [slideIndex, setSlideShapes, save])
+    onShapeSelect(null)
+    setTimeout(() => saveRef.current(), 0)
+  }, [slideIndex, setSlideShapes, save, onShapeSelect])
 
   const addShape = useCallback((type) => {
     const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
@@ -51,14 +54,14 @@ export default function ShapeLayer({ slideIndex }) {
       s[slideIndex] = [...(s[slideIndex] || []), shape]
       return s
     })
-    setSelectedShapeId(id)
-    setTimeout(() => save(), 0)
-  }, [slideIndex, setSlideShapes, save])
+    onShapeSelect(id)
+    setTimeout(() => saveRef.current(), 0)
+  }, [slideIndex, setSlideShapes, save, onShapeSelect])
 
   const handleShapeMouseDown = useCallback((e, shape) => {
     if (e.button !== 0) return
     e.stopPropagation()
-    setSelectedShapeId(shape.id)
+    onShapeSelect(shape.id)
 
     const el = e.currentTarget
     const isHandle = e.target.classList.contains('resize-handle')
@@ -67,17 +70,15 @@ export default function ShapeLayer({ slideIndex }) {
 
     if (isLineHandle && (shape.type === 'line' || shape.type === 'arrow')) {
       e.preventDefault()
-      const sr = slideRef.current.getBoundingClientRect()
-      const xPct = (e.clientX - sr.left) / sr.width * 100
-      const yPct = (e.clientY - sr.top) / sr.height * 100
       setShapeDragState({
         shapeId: shape.id, idx: slideIndex,
         handle: 'line-' + (e.target.classList.contains('end') ? 'end' : 'start'),
         startX: e.clientX, startY: e.clientY,
-        startL: parseFloat(shape.x), startT: parseFloat(shape.y),
-        startW: parseFloat(shape.w), startH: parseFloat(shape.h),
+        startL: el.offsetLeft, startT: el.offsetTop,
+        startW: el.offsetWidth, startH: el.offsetHeight,
         startRotation: shape.rotation || 0,
-        startMX: xPct, startMY: yPct
+        sw: slideRef.current.offsetWidth,
+        sh: slideRef.current.offsetHeight
       })
       return
     }
@@ -116,11 +117,11 @@ export default function ShapeLayer({ slideIndex }) {
       startW: el.offsetWidth, startH: el.offsetHeight,
       active: false
     })
-  }, [slideIndex])
+  }, [slideIndex, onShapeSelect])
 
   const handleDoubleClick = useCallback((e, shape) => {
     e.stopPropagation()
-    setSelectedShapeId(shape.id)
+    onShapeSelect(shape.id)
     if (shape.type === 'text') {
       const lbl = e.currentTarget.querySelector('.shape-label')
       if (!lbl) return
@@ -129,7 +130,7 @@ export default function ShapeLayer({ slideIndex }) {
       const onBlur = () => {
         lbl.contentEditable = false
         updateShape(shape.id, { text: lbl.textContent || '' })
-        setTimeout(() => save(), 0)
+        setTimeout(() => saveRef.current(), 0)
         lbl.removeEventListener('blur', onBlur)
       }
       lbl.addEventListener('blur', onBlur)
@@ -144,7 +145,7 @@ export default function ShapeLayer({ slideIndex }) {
         try {
           const url = await uploadImage(file)
           updateShape(shape.id, { src: url })
-          setTimeout(() => save(), 0)
+          setTimeout(() => saveRef.current(), 0)
         } catch (_) { showToast('Failed to upload image') }
       }
       document.body.appendChild(input)
@@ -166,21 +167,17 @@ export default function ShapeLayer({ slideIndex }) {
       const onBlur = () => {
         lbl.contentEditable = false
         updateShape(shape.id, { text: lbl.textContent || '' })
-        setTimeout(() => save(), 0)
+        setTimeout(() => saveRef.current(), 0)
         lbl.removeEventListener('blur', onBlur)
       }
       lbl.addEventListener('blur', onBlur)
     }
-  }, [slideIndex, updateShape, save, showToast])
+  }, [slideIndex, updateShape, save, showToast, onShapeSelect])
 
   const handleContextMenu = useCallback((e, shape) => {
     e.preventDefault()
-    e.stopPropagation()
-    setSelectedShapeId(shape.id)
-    window.dispatchEvent(new CustomEvent('shape-context-menu', {
-      detail: { x: e.clientX, y: e.clientY, slideIdx: slideIndex, shapeId: shape.id, shape }
-    }))
-  }, [slideIndex])
+    onShapeSelect(shape.id)
+  }, [onShapeSelect])
 
   useEffect(() => {
     if (!shapeDragState || shapeDragState.idx !== slideIndex) return
@@ -204,23 +201,24 @@ export default function ShapeLayer({ slideIndex }) {
 
       if (h === 'line-end' || h === 'line-start') {
         const sr = slideEl.getBoundingClientRect()
-        const mxPct = (e.clientX - sr.left) / sr.width * 100
-        const myPct = (e.clientY - sr.top) / sr.height * 100
-        let x1, y1, x2, y2
+        const mx = e.clientX - sr.left
+        const my = e.clientY - sr.top
+        let fx, fy, dx, dy
         if (h === 'line-end') {
-          x1 = shapeDragState.startL; y1 = shapeDragState.startT
-          x2 = mxPct; y2 = myPct
+          fx = shapeDragState.startL; fy = shapeDragState.startT
+          dx = mx - fx; dy = my - fy
         } else {
-          const aRad = shapeDragState.startRotation * Math.PI / 180
-          x2 = shapeDragState.startL + shapeDragState.startW * Math.cos(aRad)
-          y2 = shapeDragState.startT + shapeDragState.startW * Math.sin(aRad)
-          x1 = mxPct; y1 = myPct
+          const ang = shapeDragState.startRotation * Math.PI / 180
+          fx = shapeDragState.startL + shapeDragState.startW * Math.cos(ang)
+          fy = shapeDragState.startT + shapeDragState.startW * Math.sin(ang)
+          dx = fx - mx; dy = fy - my
         }
-        const dx = x2 - x1, dy = y2 - y1
         const dist = Math.sqrt(dx * dx + dy * dy)
         const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI
-        shapeEl.style.left = x1 + '%'; shapeEl.style.top = y1 + '%'
-        shapeEl.style.width = Math.max(dist, 0.1) + '%'
+        const l = h === 'line-end' ? fx : mx
+        const t = h === 'line-end' ? fy : my
+        shapeEl.style.left = l + 'px'; shapeEl.style.top = t + 'px'
+        shapeEl.style.width = Math.max(dist, 0.1) + 'px'
         shapeEl.style.transform = 'rotate(' + angleDeg + 'deg)'
         return
       }
@@ -270,23 +268,40 @@ export default function ShapeLayer({ slideIndex }) {
         const sw = slideEl.offsetWidth, sh = slideEl.offsetHeight
         const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
         const rot = match ? parseFloat(match[1]) : 0
+        const saveL = shapeEl.offsetLeft, saveT = shapeEl.offsetTop
+        const saveW = shapeEl.offsetWidth
+        const rad = rot * Math.PI / 180
+        const exPx = saveL + saveW * Math.cos(rad)
+        const eyPx = saveT + saveW * Math.sin(rad)
         updateShape(shape.id, {
-          x: (shapeEl.offsetLeft / sw * 100) + '%',
-          y: (shapeEl.offsetTop / sh * 100) + '%',
-          w: (shapeEl.offsetWidth / sw * 100) + '%',
-          rotation: rot
+          x: (saveL / sw * 100) + '%',
+          y: (saveT / sh * 100) + '%',
+          w: (saveW / sw * 100) + '%',
+          rotation: rot,
+          ex: (exPx / sw * 100) + '%',
+          ey: (eyPx / sh * 100) + '%'
         })
       } else {
         const sw = slideEl.offsetWidth, sh = slideEl.offsetHeight
-        updateShape(shape.id, {
+        const updates = {
           x: (shapeEl.offsetLeft / sw * 100) + '%',
           y: (shapeEl.offsetTop / sh * 100) + '%',
           w: (shapeEl.offsetWidth / sw * 100) + '%',
           h: (shapeEl.offsetHeight / sh * 100) + '%'
-        })
+        }
+        if (shape.type === 'line' || shape.type === 'arrow') {
+          const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
+          const rotDeg = match ? parseFloat(match[1]) : 0
+          const rotRad = rotDeg * Math.PI / 180
+          const endX = shapeEl.offsetLeft + shapeEl.offsetWidth * Math.cos(rotRad)
+          const endY = shapeEl.offsetTop + shapeEl.offsetWidth * Math.sin(rotRad)
+          updates.ex = (endX / sw * 100) + '%'
+          updates.ey = (endY / sh * 100) + '%'
+        }
+        updateShape(shape.id, updates)
       }
       setShapeDragState(null)
-      setTimeout(() => save(), 0)
+      setTimeout(() => saveRef.current(), 0)
     }
 
     window.addEventListener('mousemove', onMouseMove)
@@ -295,30 +310,82 @@ export default function ShapeLayer({ slideIndex }) {
   }, [shapeDragState, slideIndex, findShape, updateShape, save])
 
   const handleLineDrawStart = useCallback((e) => {
-    if (!lineDrawState) return
+    if (!lineDrawState || slideIndex !== current) return
     e.preventDefault()
     const sr = slideRef.current.getBoundingClientRect()
     const xPct = (e.clientX - sr.left) / sr.width * 100
     const yPct = (e.clientY - sr.top) / sr.height * 100
     if (!lineDrawState.active) {
-      setLineDrawState(prev => ({ ...prev, x1: xPct, y1: yPct, x2: xPct, y2: yPct, active: true }))
+      lineDrawStartRef.current = { x: xPct, y: yPct }
+      setLineDrawState(prev => ({ ...prev, x1: xPct, y1: yPct, active: true }))
     } else {
+      if (linePreviewRef.current) linePreviewRef.current.style.display = 'none'
       finishLineDraw(xPct, yPct)
     }
-  }, [lineDrawState])
+  }, [lineDrawState, slideIndex, current])
+
+  useEffect(() => {
+    if (!lineDrawState || !lineDrawState.active || slideIndex !== current) return
+    finishingRef.current = false
+    const x1 = lineDrawState.x1, y1 = lineDrawState.y1
+    let hasDragged = false
+    const onMouseMove = (e) => {
+      hasDragged = true
+      const sr = slideRef.current.getBoundingClientRect()
+      const x2 = (e.clientX - sr.left) / sr.width * 100
+      const y2 = (e.clientY - sr.top) / sr.height * 100
+      lineDrawStartRef.current = { x: x2, y: y2 }
+      const el = linePreviewRef.current
+      if (!el) return
+      const sr2 = slideRef.current.getBoundingClientRect()
+      const pw = sr2.width, ph = sr2.height
+      const x1p = x1 / 100 * pw, y1p = y1 / 100 * ph
+      const x2p = x2 / 100 * pw, y2p = y2 / 100 * ph
+      const dx = x2p - x1p, dy = y2p - y1p
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < 0.1) { el.style.display = 'none'; return }
+      el.style.display = 'block'
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI
+      el.style.left = x1 + '%'
+      el.style.top = y1 + '%'
+      el.style.width = dist + 'px'
+      el.style.transform = 'rotate(' + angle + 'deg)'
+    }
+    const onMouseUp = (e) => {
+      if (!hasDragged) return
+      if (linePreviewRef.current) linePreviewRef.current.style.display = 'none'
+      const sr = slideRef.current.getBoundingClientRect()
+      const x2 = (e.clientX - sr.left) / sr.width * 100
+      const y2 = (e.clientY - sr.top) / sr.height * 100
+      const dx = x2 - x1, dy = y2 - y1
+      if (Math.sqrt(dx * dx + dy * dy) < 0.5) return
+      finishLineDraw(x2, y2)
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [lineDrawState, slideIndex, current])
 
   const finishLineDraw = useCallback((x2, y2) => {
-    if (!lineDrawState) return
+    if (!lineDrawState || finishingRef.current) return
+    finishingRef.current = true
+    if (linePreviewRef.current) linePreviewRef.current.style.display = 'none'
     const { type, x1, y1 } = lineDrawState
     const dx = x2 - x1, dy = y2 - y1
     const dist = Math.sqrt(dx * dx + dy * dy)
     if (dist < 0.5) { setLineDrawState(null); return }
     const angle = Math.atan2(dy, dx) * 180 / Math.PI
     const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+    const color = '#6366f1'
     const shape = {
-      id, type, x: x1 + '%', y: y1 + '%', w: dist + '%', h: '0.3%',
-      rotation: angle, fill: 'transparent', stroke: '#6366f1', strokeWidth: 3,
+      id, type, x: x1 + '%', y: y1 + '%', ex: x2 + '%', ey: y2 + '%',
+      w: dist + '%', h: '0.3%',
+      rotation: angle, fill: 'transparent', stroke: color, strokeWidth: 3,
       fillOpacity: 1, strokeOpacity: 1,
+      lineWeight: 3, lineDash: 'solid',
       text: '', fontSize: 14, color: '#ffffff', fontFamily: 'Poppins', textAlign: 'center'
     }
     setSlideShapes(prev => {
@@ -326,24 +393,10 @@ export default function ShapeLayer({ slideIndex }) {
       s[slideIndex] = [...(s[slideIndex] || []), shape]
       return s
     })
-    setSelectedShapeId(id)
+    onShapeSelect(id)
     setLineDrawState(null)
-    setTimeout(() => save(), 0)
-  }, [lineDrawState, slideIndex, setSlideShapes, save])
-
-  useEffect(() => {
-    if (!lineDrawState || !lineDrawState.active) return
-    const onMouseMove = (e) => {
-      const sr = slideRef.current.getBoundingClientRect()
-      setLineDrawState(prev => ({
-        ...prev,
-        x2: (e.clientX - sr.left) / sr.width * 100,
-        y2: (e.clientY - sr.top) / sr.height * 100
-      }))
-    }
-    window.addEventListener('mousemove', onMouseMove)
-    return () => window.removeEventListener('mousemove', onMouseMove)
-  }, [lineDrawState])
+    setTimeout(() => saveRef.current(), 0)
+  }, [lineDrawState, slideIndex, setSlideShapes, save, onShapeSelect])
 
   useEffect(() => {
     const handler = (e) => {
@@ -368,13 +421,15 @@ export default function ShapeLayer({ slideIndex }) {
             dup.id = newId
             dup.x = parseFloat(dup.x) + 2 + '%'
             dup.y = parseFloat(dup.y) + 2 + '%'
+            if (dup.ex) dup.ex = parseFloat(dup.ex) + 2 + '%'
+            if (dup.ey) dup.ey = parseFloat(dup.ey) + 2 + '%'
             setSlideShapes(prev => {
               const s = { ...prev }
               s[slideIndex] = [...(s[slideIndex] || []), dup]
               return s
             })
-            setSelectedShapeId(newId)
-            setTimeout(() => save(), 0)
+            onShapeSelect(newId)
+            setTimeout(() => saveRef.current(), 0)
             break
           }
           case 'delete':
@@ -387,13 +442,15 @@ export default function ShapeLayer({ slideIndex }) {
             pasteShape.id = newId
             pasteShape.x = parseFloat(pasteShape.x) + 2 + '%'
             pasteShape.y = parseFloat(pasteShape.y) + 2 + '%'
+            if (pasteShape.ex) pasteShape.ex = parseFloat(pasteShape.ex) + 2 + '%'
+            if (pasteShape.ey) pasteShape.ey = parseFloat(pasteShape.ey) + 2 + '%'
             setSlideShapes(prev => {
               const s = { ...prev }
               s[slideIndex] = [...(s[slideIndex] || []), pasteShape]
               return s
             })
-            setSelectedShapeId(newId)
-            setTimeout(() => save(), 0)
+            onShapeSelect(newId)
+            setTimeout(() => saveRef.current(), 0)
             showToast('Shape pasted', 'success')
             break
           }
@@ -402,24 +459,45 @@ export default function ShapeLayer({ slideIndex }) {
     }
     window.addEventListener('shape-action', handler)
     return () => window.removeEventListener('shape-action', handler)
-  }, [slideIndex, findShape, deleteShape, setSlideShapes, save, showToast])
+  }, [slideIndex, findShape, deleteShape, setSlideShapes, save, showToast, onShapeSelect])
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return
+      if (document.activeElement?.isContentEditable) return
+      if (document.fullscreenElement) return
+      if (slideIndex !== current) return
+      if (!selectedShapeId) return
+      const exists = (slideShapes[slideIndex] || []).some(s => s.id === selectedShapeId)
+      if (exists) deleteShape(selectedShapeId)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [slideIndex, current, selectedShapeId, slideShapes, deleteShape])
 
   return (
     <div ref={slideRef} className="shape-layer"
-      onMouseDown={lineDrawState ? handleLineDrawStart : undefined}
-      style={{ position: 'absolute', inset: 0, pointerEvents: lineDrawState ? 'auto' : 'none', cursor: lineDrawState ? 'crosshair' : 'default', zIndex: 10 }}>
+      onMouseDown={lineDrawState && slideIndex === current ? handleLineDrawStart : undefined}
+      style={{ position: 'absolute', inset: 0, pointerEvents: lineDrawState && slideIndex === current ? 'auto' : 'none', cursor: lineDrawState && slideIndex === current ? 'crosshair' : 'default', zIndex: 10 }}>
       {shapes.map(shape => (
         <ShapeEl key={shape.id} shape={shape} isSelected={selectedShapeId === shape.id}
           onMouseDown={e => handleShapeMouseDown(e, shape)}
           onDoubleClick={e => handleDoubleClick(e, shape)}
-          onContextMenu={e => handleContextMenu(e, shape)} />
+          onContextMenu={e => handleContextMenu(e, shape)}
+          updateShape={updateShape} />
       ))}
+      <div ref={linePreviewRef}
+        style={{
+          position: 'absolute', display: 'none', height: '3px',
+          background: '#6366f1', transformOrigin: '0 50%',
+          pointerEvents: 'none', zIndex: 20,
+          borderRadius: '2px'
+        }} />
     </div>
   )
 }
 
-function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu }) {
-  const { updateShape, slideShapes, slideIndex } = useSlideshow()
+function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu, updateShape }) {
   const elRef = useRef(null)
 
   let style = {
@@ -458,6 +536,55 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu 
     style.border = 'none'
     style.borderRadius = '0'
   }
+
+  useLayoutEffect(() => {
+    if (shape.type !== 'line' && shape.type !== 'arrow') return
+    const el = elRef.current
+    if (!el) return
+    const parent = el.parentElement
+    if (!parent) return
+
+    const pw = parent.offsetWidth, ph = parent.offsetHeight
+    if (!pw || !ph) return
+
+    if (!shape.ex || !shape.ey) {
+      const rad = (shape.rotation || 0) * Math.PI / 180
+      const wPx = parseFloat(shape.w) / 100 * pw
+      const x1p = parseFloat(shape.x) / 100 * pw
+      const y1p = parseFloat(shape.y) / 100 * ph
+      const x2p = x1p + wPx * Math.cos(rad)
+      const y2p = y1p + wPx * Math.sin(rad)
+      const ex = (x2p / pw * 100) + '%'
+      const ey = (y2p / ph * 100) + '%'
+      const dx = x2p - x1p, dy = y2p - y1p
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI
+      el.style.width = Math.max(dist, 0.1) + 'px'
+      el.style.transform = 'rotate(' + angle + 'deg)'
+      updateShape(shape.id, { ex, ey })
+      return
+    }
+
+    const update = () => {
+      const pw2 = parent.offsetWidth, ph2 = parent.offsetHeight
+      if (!pw2 || !ph2) return
+      const x1p = parseFloat(shape.x) / 100 * pw2
+      const y1p = parseFloat(shape.y) / 100 * ph2
+      const x2p = parseFloat(shape.ex) / 100 * pw2
+      const y2p = parseFloat(shape.ey) / 100 * ph2
+      const dx = x2p - x1p, dy = y2p - y1p
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI
+      el.style.width = Math.max(dist, 0.1) + 'px'
+      el.style.transform = 'rotate(' + angle + 'deg)'
+    }
+
+    update()
+
+    const ro = new ResizeObserver(update)
+    ro.observe(parent)
+    return () => ro.disconnect()
+  }, [shape.x, shape.y, shape.w, shape.ex, shape.ey, shape.rotation, shape.type, shape.id, updateShape])
 
   return (
     <div ref={elRef}
@@ -524,7 +651,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu 
           )}
         </>
       )}
-      {(shape.type !== 'line' && shape.type !== 'arrow' && shape.type !== 'text' && shape.type !== 'image') && (
+      {(shape.type !== 'line' && shape.type !== 'arrow' && shape.type !== 'image') && (
         <>
           {['nw','n','ne','e','se','s','sw','w'].map(dir => (
             <div key={dir} className={'resize-handle ' + dir} />

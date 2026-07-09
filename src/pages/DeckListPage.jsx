@@ -29,6 +29,7 @@ export default function DeckListPage() {
   const [renameValue, setRenameValue] = useState('')
   const [ctxPos, setCtxPos] = useState(null)
   const [ctxDeck, setCtxDeck] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => { loadDecks() }, [])
 
@@ -41,12 +42,14 @@ export default function DeckListPage() {
   }, [sortBy])
 
   async function loadDecks() {
+    setLoading(true)
     try {
       const decks = await fetchDecks()
       setAllDecks(decks)
     } catch (_) {
       showToast('Failed to load decks')
     }
+    setLoading(false)
   }
 
   const sortedDecks = [...allDecks].sort((a, b) => {
@@ -165,7 +168,11 @@ export default function DeckListPage() {
       </div>
 
       <div className={'list ' + viewMode}>
-        {pageDecks.map(d => {
+        {loading ? (
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="skeleton-card" />
+          ))
+        ) : pageDecks.map(d => {
           const thumbUrl = d.firstImage ? resolveThumb(d.firstImage) : ''
           const starred = !!d.starred
           return (

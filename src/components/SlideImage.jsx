@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react'
+import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
 import { resolveUrl, uploadImage } from '../api'
 
@@ -8,6 +8,8 @@ export default function SlideImage({ slideIndex }) {
   const wrapRef = useRef(null)
   const [activeResize, setActiveResize] = useState(null)
   const [dragCandidate, setDragCandidate] = useState(null)
+  const saveRef = useRef(save)
+  useLayoutEffect(() => { saveRef.current = save })
 
   const url = slideUrls[slideIndex]
   const mode = slideMode[slideIndex] || 'contain'
@@ -16,7 +18,7 @@ export default function SlideImage({ slideIndex }) {
 
   const handleModeChange = useCallback((newMode) => {
     setSlideMode(prev => ({ ...prev, [slideIndex]: newMode }))
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
   }, [slideIndex, setSlideMode, save])
 
   const handleBgChange = useCallback((color) => {
@@ -25,7 +27,7 @@ export default function SlideImage({ slideIndex }) {
     } else {
       setSlideBgColors(prev => { const n = { ...prev }; delete n[slideIndex]; return n })
     }
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
   }, [slideIndex, setSlideBgColors, save])
 
   const handleResizeStart = useCallback((e, handle) => {
@@ -59,34 +61,34 @@ export default function SlideImage({ slideIndex }) {
   }, [])
 
   useEffect(() => {
-    if (!dragCandidate) return
+    if (!dragCandidate && !activeResize) return
     const onMouseMove = (e) => {
       if (!wrapRef.current) return
-      const dx = e.clientX - dragCandidate.startX
-      const dy = e.clientY - dragCandidate.startY
+      const act = activeResize || dragCandidate
+      const dx = e.clientX - act.startX
+      const dy = e.clientY - act.startY
       if (!activeResize && (Math.abs(dx) < 3 && Math.abs(dy) < 3)) return
 
       if (!activeResize) {
         setActiveResize(dragCandidate)
         setDragCandidate(null)
-        return
       }
 
-      const h = activeResize.handle
-      let x = activeResize.startL, y = activeResize.startT
-      let w = activeResize.startW, hh = activeResize.startH
+      const h = act.handle
+      let x = act.startL, y = act.startT
+      let w = act.startW, hh = act.startH
       const min = 30
 
       const sides = {
-        'e': () => { w = Math.max(min, activeResize.startW + dx) },
-        'w': () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw },
-        's': () => { hh = Math.max(min, activeResize.startH + dy) },
-        'n': () => { const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh },
-        'ne': () => { w = Math.max(min, activeResize.startW + dx); const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh },
-        'nw': () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw; const dh = Math.min(activeResize.startH - min, dy); y = activeResize.startT + dh; hh = activeResize.startH - dh },
-        'se': () => { w = Math.max(min, activeResize.startW + dx); hh = Math.max(min, activeResize.startH + dy) },
-        'sw': () => { const dw = Math.min(activeResize.startW - min, dx); x = activeResize.startL + dw; w = activeResize.startW - dw; hh = Math.max(min, activeResize.startH + dy) },
-        'move': () => { x = activeResize.startL + dx; y = activeResize.startT + dy }
+        'e': () => { w = Math.max(min, act.startW + dx) },
+        'w': () => { const dw = Math.min(act.startW - min, dx); x = act.startL + dw; w = act.startW - dw },
+        's': () => { hh = Math.max(min, act.startH + dy) },
+        'n': () => { const dh = Math.min(act.startH - min, dy); y = act.startT + dh; hh = act.startH - dh },
+        'ne': () => { w = Math.max(min, act.startW + dx); const dh = Math.min(act.startH - min, dy); y = act.startT + dh; hh = act.startH - dh },
+        'nw': () => { const dw = Math.min(act.startW - min, dx); x = act.startL + dw; w = act.startW - dw; const dh = Math.min(act.startH - min, dy); y = act.startT + dh; hh = act.startH - dh },
+        'se': () => { w = Math.max(min, act.startW + dx); hh = Math.max(min, act.startH + dy) },
+        'sw': () => { const dw = Math.min(act.startW - min, dx); x = act.startL + dw; w = act.startW - dw; hh = Math.max(min, act.startH + dy) },
+        'move': () => { x = act.startL + dx; y = act.startT + dy }
       }
       if (sides[h]) sides[h]()
 
@@ -97,8 +99,9 @@ export default function SlideImage({ slideIndex }) {
     }
 
     const onMouseUp = () => {
+      const active = activeResize || dragCandidate
       setDragCandidate(null)
-      if (activeResize && wrapRef.current) {
+      if (active && wrapRef.current) {
         const slideEl = wrapRef.current.closest('.slide')
         const sw = slideEl.offsetWidth
         const sh = slideEl.offsetHeight
@@ -113,7 +116,7 @@ export default function SlideImage({ slideIndex }) {
         wrapRef.current.style.top = y
         wrapRef.current.style.width = w
         wrapRef.current.style.height = h
-        setTimeout(() => save(), 0)
+        setTimeout(() => saveRef.current(), 0)
       }
       setActiveResize(null)
     }
@@ -158,7 +161,7 @@ export default function SlideImage({ slideIndex }) {
               const serverUrl = await uploadImage(file)
               setSlideUrls(prev => ({ ...prev, [slideIndex]: serverUrl }))
               setResizeData(prev => { const n = { ...prev }; delete n[slideIndex]; return n })
-              setTimeout(() => save(), 0)
+              setTimeout(() => saveRef.current(), 0)
             } catch (_) { console.error('Upload failed') }
           }
         }}>

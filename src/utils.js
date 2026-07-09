@@ -24,11 +24,11 @@ export function hexToRgba(hex, opacity) {
 export function getDefaultShape(type) {
   const base = { x: '25%', y: '20%', w: '20%', h: '20%', rotation: 0, fill: 'transparent', stroke: '#6366f1', strokeWidth: 2, fillOpacity: 1, strokeOpacity: 1, text: '', fontSize: 14, color: '#ffffff', fontFamily: 'Poppins', textAlign: 'center' }
   switch (type) {
-    case 'rect': return { ...base, type: 'rect' }
-    case 'circle': return { ...base, type: 'circle' }
+    case 'rect': return { ...base, type: 'rect', fill: '#6366f1', fillOpacity: 0.3 }
+    case 'circle': return { ...base, type: 'circle', fill: '#6366f1', fillOpacity: 0.3 }
     case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' }
     case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' }
-    case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0 }
+    case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0, color: '#000000' }
     case 'image': return { ...base, type: 'image', w: '25%', h: '25%', src: '', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0 }
     default: return { ...base, type: 'rect' }
   }

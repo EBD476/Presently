@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { fetchDeckData, saveDeckData, uploadImage, resolveUrl, getDefaultApiBase } from '../api'
 
 const SlideshowContext = createContext(null)
@@ -24,6 +24,8 @@ export function SlideshowProvider({ children }) {
   const [expandedSlide, setExpandedSlide] = useState(null)
   const slidesRef = useRef(slides)
   const drawDataRef = useRef(drawData)
+  const saveRef = useRef(null)
+  useLayoutEffect(() => { saveRef.current = save })
 
   useEffect(() => { slidesRef.current = slides }, [slides])
   useEffect(() => { drawDataRef.current = drawData }, [drawData])
@@ -89,7 +91,7 @@ export function SlideshowProvider({ children }) {
   const addSlide = useCallback(() => {
     const idx = slides.length
     setSlides(prev => [...prev, idx])
-    setTimeout(() => { setCurrent(idx); save() }, 0)
+    setTimeout(() => { setCurrent(idx); saveRef.current() }, 0)
   }, [slides.length, save])
 
   const removeSlide = useCallback((index) => {
@@ -117,7 +119,7 @@ export function SlideshowProvider({ children }) {
       const n = {}; Object.entries(prev).forEach(([k, v]) => { const ki = parseInt(k); n[ki > index ? ki - 1 : ki] = v }); return n
     })
     if (current >= slides.length - 1) setCurrent(c => Math.max(0, c - 1))
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
   }, [slides.length, current, save])
 
   const duplicateSlide = useCallback((index) => {
@@ -133,7 +135,7 @@ export function SlideshowProvider({ children }) {
       if (prev[index]) return { ...prev, [idx]: prev[index].map(s => ({ ...s, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) })) }
       return prev
     })
-    setTimeout(() => { setCurrent(idx); save() }, 0)
+    setTimeout(() => { setCurrent(idx); saveRef.current() }, 0)
   }, [save])
 
   const reorderSlides = useCallback((fromIdx, toIdx) => {
@@ -166,14 +168,14 @@ export function SlideshowProvider({ children }) {
     else if (fromIdx > toIdx && current < fromIdx && current >= toIdx) newCur++
     setCurrent(newCur)
 
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
   }, [slides, slideUrls, resizeData, slideMode, slideNames, slideBgColors, slideNotes, slideShapes, current, save])
 
   const renameDeck = useCallback(async (newName) => {
     const kv = buildKv()
     await saveDeckData(newName, kv)
     setDeckName(newName)
-    setTimeout(() => save(), 0)
+    setTimeout(() => saveRef.current(), 0)
     return newName
   }, [buildKv, save])
 

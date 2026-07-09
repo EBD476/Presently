@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
 
 export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
   const { slideShapes, setSlideShapes, save } = useSlideshow()
   const [props, setProps] = useState(null)
+  const panelRef = useRef(null)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
 
   const shape = slideIndex != null && selectedShapeId
     ? (slideShapes[slideIndex] || []).find(s => s.id === selectedShapeId)
@@ -30,6 +32,22 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
     setTimeout(() => save(), 300)
   }, [shape, slideIndex, setSlideShapes, save, props])
 
+  const handlePanelMouseDown = (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return
+    const startX = e.clientX, startY = e.clientY
+    const originX = dragOffset.x, originY = dragOffset.y
+    const onMouseMove = (e) => {
+      setDragOffset({ x: originX + e.clientX - startX, y: originY + e.clientY - startY })
+    }
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    e.preventDefault()
+  }
+
   if (!shape) return null
 
   const isText = shape.type === 'text'
@@ -37,7 +55,9 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
   const isLine = shape.type === 'line' || shape.type === 'arrow'
 
   return (
-    <div className="shape-props show" id="shapeProps">
+    <div className="shape-props show" id="shapeProps" ref={panelRef}
+      style={{ transform: 'translate(' + dragOffset.x + 'px,' + dragOffset.y + 'px)' }}
+      onMouseDown={handlePanelMouseDown}>
       {isText && (
         <>
           <span className="shape-prop-group"><label>Color</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
@@ -63,7 +83,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
             <button className={'shape-dir-btn' + (props?.direction === 'ltr' ? ' active' : '')} data-dir="ltr" onClick={() => update({ direction: 'ltr' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><line x1="4" y1="7" x2="10" y2="7"/></svg></button>
             <button className={'shape-dir-btn' + (props?.direction === 'rtl' ? ' active' : '')} data-dir="rtl" onClick={() => update({ direction: 'rtl' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9 7 4 12 9 17"/><line x1="14" y1="7" x2="20" y2="7"/></svg></button>
           </span>
-          <span className="shape-prop-group" id="shapeBgGroup"><label>Bg</label><input type="color" value={props?.bgColor || '#000000'} onChange={e => update({ bgColor: e.target.value })} /><input type="range" min="0" max="1" step="0.05" value={props?.bgOpacity || 0} style={{ width: 48 }} onChange={e => update({ bgOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((props?.bgOpacity || 0) * 100)}%</label></span>
+          <span className="shape-prop-group" id="shapeBgGroup"><label>Bg</label><input type="color" value={props?.bgColor && props?.bgColor !== 'transparent' ? props.bgColor : '#000000'} onChange={e => update({ bgColor: e.target.value })} /><input type="range" min="0" max="1" step="0.05" value={props?.bgOpacity || 0} style={{ width: 48 }} onChange={e => update({ bgOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((props?.bgOpacity || 0) * 100)}%</label></span>
         </>
       )}
       {isImage && (
@@ -88,6 +108,8 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
       )}
       {isLine && (
         <>
+          <span className="shape-prop-group"><label>Fill</label><input type="color" value={shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none' ? shape.fill : '#ffffff'} onChange={e => update({ fill: e.target.value })} /></span>
+          <span className="shape-prop-group" id="shapeFillOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.fillOpacity == null ? 1 : shape.fillOpacity} style={{ width: 48 }} onChange={e => update({ fillOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.fillOpacity == null ? 1 : shape.fillOpacity) * 100)}%</label></span>
           <span className="shape-prop-group" id="shapeLineWeightGroup"><label>Weight</label><input type="range" min="1" max="20" value={shape.lineWeight || 3} style={{ width: 52 }} onChange={e => update({ lineWeight: parseInt(e.target.value) })} /><input type="number" value={shape.lineWeight || 3} min={1} max={20} style={{ width: 36 }} onChange={e => update({ lineWeight: parseInt(e.target.value) || 3 })} /></span>
           <span className="shape-prop-group" id="shapeLineDashGroup">
             <select value={shape.lineDash || 'solid'} onChange={e => update({ lineDash: e.target.value })}>

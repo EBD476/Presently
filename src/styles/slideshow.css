@@ -113,6 +113,7 @@
       flex-direction: column;
       border-right: 1px solid rgba(255, 255, 255, 0.06);
       z-index: 300;
+      position: relative;
       transition: margin-left 0.3s ease;
     }
 
@@ -645,7 +646,7 @@
       display: none !important;
     }
     .fullscreen .slide img { -webkit-user-drag: none; user-select: none; }
-    .fullscreen .slide-img-wrap { cursor: default !important; }
+    .fullscreen .slide-img-wrap { cursor: default !important; pointer-events: none !important; }
 
     .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
     .resize-handle.n  { top: -6px; left: calc(50% - 6px); cursor: n-resize; }
@@ -793,6 +794,7 @@
       pointer-events: none;
     }
     .toast {
+      font-family: 'poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
       padding: 0.65rem 1rem;
       border-radius: 0.5rem;
       font-size: 0.85rem;
@@ -802,7 +804,7 @@
       pointer-events: auto;
       animation: toastIn 0.25s ease-out;
       max-width: 360px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);      
     }
     .toast-error { background: #dc2626; }
     .toast-success { background: #16a34a; }
@@ -850,7 +852,7 @@
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(219, 219, 219, 0.877);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #c0c0d8;
       width: 48px;
@@ -924,7 +926,8 @@
       position: absolute;
       top: 1.25rem;
       right: 1.25rem;
-      background: rgba(255, 255, 255, 0.06);
+      background-color: #e3e3e3ba;
+      /* background: rgba(255, 255, 255, 0.06); */
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #a0a0b8;
       width: 40px;
@@ -951,7 +954,8 @@
       position: absolute;
       top: 4rem;
       right: 1.25rem;
-      background: rgba(255, 255, 255, 0.06);
+      background-color: #e3e3e3ba;
+      /* background: rgba(255, 255, 255, 0.06); */
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #a0a0b8;
       width: 40px;
@@ -1012,8 +1016,8 @@
     .sidebar-toggle {
       position: fixed;
       top: 45%;
-      left: calc(240px - 22px);
-      z-index: 400;
+      left: 14rem;
+      z-index: 1;
       background: rgba(28, 28, 36, 0.9);
       border: 1px solid rgba(28, 28, 36, 0.9);
       color: #c0c0d0;
@@ -1027,7 +1031,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: left 0.3s ease, background 0.2s;
+      transition: left 0.3s ease, background 0.2s, z-index 0s;
       opacity: 1;
       pointer-events: auto;
       padding-left: 10px;
@@ -1039,7 +1043,22 @@
     }
 
     .sidebar.collapsed ~ .sidebar-toggle {
-      left: -1rem;
+      left: -0.8rem;
+      z-index: 400;
+    }
+
+    .fullscreen .sidebar-toggle {
+      display: none;
+    }
+
+    .fullscreen .slideshow-container {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+
+    .fullscreen .slide .shape {
+      pointer-events: none !important;
     }
 
     .modal-overlay {
@@ -1643,28 +1662,12 @@
       border-radius: 50%;
     }
     .shape-line {
-      border-style: solid;
       border-radius: 0;
-      min-width: 20px;
-      transform-origin: center center;
+      transform-origin: 0 50%;
     }
     .shape-arrow {
-      border-style: solid;
       border-radius: 0;
-      min-width: 40px;
-      transform-origin: center center;
-    }
-    .shape-arrow::after {
-      content: '';
-      position: absolute;
-      right: -1px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 0;
-      height: 0;
-      border-top: 8px solid transparent;
-      border-bottom: 8px solid transparent;
-      border-left: 12px solid currentColor;
+      transform-origin: 0 50%;
     }
     .line-handle {
       position: absolute;
@@ -1797,8 +1800,8 @@
       padding: 0.4rem;
       display: none;
       flex-direction: column;
-      gap: 0.25rem;
       backdrop-filter: blur(12px);
+      width: 10rem;
       -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
@@ -1809,7 +1812,6 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.2rem 0.6rem;
       border-radius: 0.4rem;
       border: none;
       background: transparent;
@@ -1849,6 +1851,7 @@
       padding: 0.4rem 0.6rem;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
+      cursor: grab;
     }
     .shape-props.show {
       display: flex;
@@ -1883,11 +1886,11 @@
     }
     .shape-props input[type="number"]:focus { border-color: #6366f1; }
     .shape-props select {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #fff;
+      border: 1px solid #ccc;
       border-radius: 0.3rem;
       padding: 0.15rem 0.3rem;
-      color: #e2e8f0;
+      color: #000;
       font-size: 0.75rem;
       font-family: inherit;
       outline: none;
@@ -2082,7 +2085,7 @@
       padding: 0.5rem;
       display: none;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.1rem;
       z-index: 300;
       box-shadow: 0 12px 40px rgba(0,0,0,0.5);
     }
@@ -2093,7 +2096,7 @@
       background: transparent;
       border: none;
       border-radius: 0.4rem;
-      padding: 0.4rem 0.75rem;
+      padding: 0.2rem 0.75rem;
       color: #c0c0d0;
       cursor: pointer;
       font-size: 0.82rem;
@@ -2119,26 +2122,6 @@
     }
     .ctx-item.ctx-sub:hover {
       color: #c0c0d0;
-    }
-    .line-handle {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #6366f1;
-      border: 2px solid #fff;
-      position: absolute;
-      cursor: pointer;
-      z-index: 2;
-    }
-    .line-handle.start {
-      left: -5px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-    .line-handle.end {
-      right: -5px;
-      top: 50%;
-      transform: translateY(-50%);
     }
     .shape-img-placeholder {
       width: 100%;
