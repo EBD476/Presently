@@ -6,7 +6,9 @@ import { resolveUrl, uploadImage } from '../api'
 
 let shapeClipboard = null
 
-export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect, lineDrawState, setLineDrawState }) {
+const GRID = 10
+
+export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect, lineDrawState, setLineDrawState, snapToGrid }) {
   const showToast = useToast()
   const { slideShapes, setSlideShapes, save, current } = useSlideshow()
   const [shapeDragState, setShapeDragState] = useState(null)
@@ -32,9 +34,15 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     })
   }, [slideIndex, setSlideShapes])
 
+  const updateShapeRef = useRef(updateShape)
+  useLayoutEffect(() => { updateShapeRef.current = updateShape })
+
   const findShape = useCallback((id) => {
     return (slideShapes[slideIndex] || []).find(s => s.id === id)
   }, [slideShapes, slideIndex])
+
+  const findShapeRef = useRef(findShape)
+  useLayoutEffect(() => { findShapeRef.current = findShape })
 
   const deleteShape = useCallback((id) => {
     setSlideShapes(prev => {
@@ -248,6 +256,11 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
       }
       if (sides[h]) sides[h]()
 
+      if (snapToGrid) {
+        const snap = (v) => Math.round(v / GRID) * GRID
+        x = snap(x); y = snap(y); w = snap(w); hh = snap(hh)
+      }
+
       shapeEl.style.left = x + 'px'; shapeEl.style.top = y + 'px'
       shapeEl.style.width = w + 'px'; shapeEl.style.height = hh + 'px'
     }
@@ -258,12 +271,12 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
       if (!slideEl || shapeDragState.idx !== slideIndex) { setShapeDragState(null); return }
       const shapeEl = slideEl.querySelector('.shape[data-shape-id="' + shapeDragState.shapeId + '"]')
       if (!shapeEl) { setShapeDragState(null); return }
-      const shape = findShape(shapeDragState.shapeId)
+      const shape = findShapeRef.current(shapeDragState.shapeId)
       if (!shape) { setShapeDragState(null); return }
 
       if (shapeDragState.handle === 'rotate') {
         const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
-        if (match) updateShape(shape.id, { rotation: parseFloat(match[1]) || 0 })
+        if (match) updateShapeRef.current(shape.id, { rotation: parseFloat(match[1]) || 0 })
       } else if (shapeDragState.handle === 'line-start' || shapeDragState.handle === 'line-end') {
         const sw = slideEl.offsetWidth, sh = slideEl.offsetHeight
         const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
@@ -273,7 +286,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
         const rad = rot * Math.PI / 180
         const exPx = saveL + saveW * Math.cos(rad)
         const eyPx = saveT + saveW * Math.sin(rad)
-        updateShape(shape.id, {
+        updateShapeRef.current(shape.id, {
           x: (saveL / sw * 100) + '%',
           y: (saveT / sh * 100) + '%',
           w: (saveW / sw * 100) + '%',
@@ -298,7 +311,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
           updates.ex = (endX / sw * 100) + '%'
           updates.ey = (endY / sh * 100) + '%'
         }
-        updateShape(shape.id, updates)
+        updateShapeRef.current(shape.id, updates)
       }
       setShapeDragState(null)
       setTimeout(() => saveRef.current(), 0)
@@ -307,7 +320,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
     return () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp) }
-  }, [shapeDragState, slideIndex, findShape, updateShape, save])
+  }, [shapeDragState, slideIndex])
 
   const handleLineDrawStart = useCallback((e) => {
     if (!lineDrawState || slideIndex !== current) return
@@ -476,7 +489,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
   }, [slideIndex, current, selectedShapeId, slideShapes, deleteShape])
 
   return (
-    <div ref={slideRef} className="shape-layer"
+    <div ref={slideRef} className={'shape-layer' + (snapToGrid ? ' snap-grid' : '')}
       onMouseDown={lineDrawState && slideIndex === current ? handleLineDrawStart : undefined}
       style={{ position: 'absolute', inset: 0, pointerEvents: lineDrawState && slideIndex === current ? 'auto' : 'none', cursor: lineDrawState && slideIndex === current ? 'crosshair' : 'default', zIndex: 10 }}>
       {shapes.map(shape => (

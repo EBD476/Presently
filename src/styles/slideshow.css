@@ -1244,6 +1244,54 @@
       border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
+    .shortcuts-modal {
+      max-width: 440px;
+    }
+
+    .shortcuts-body {
+      padding: 1rem 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .shortcuts-group-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6366f1;
+      margin-bottom: 0.4rem;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0;
+      font-size: 0.85rem;
+      color: #c0c0d0;
+    }
+
+    .shortcut-row kbd {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.3rem;
+      padding: 0.1rem 0.45rem;
+      font-size: 0.75rem;
+      font-family: inherit;
+      color: #e8e8f0;
+      min-width: 1.6rem;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .shortcut-row span {
+      flex: 1;
+      margin-left: 0.25rem;
+    }
+
     .modal-footer button {
       padding: 0.5rem 1.25rem;
       border-radius: 0.5rem;
@@ -2117,6 +2165,26 @@
     .slide-url-bar.show {
       display: flex !important;
     }
+    .ctx-sub-wrap {
+      position: relative;
+    }
+    .ctx-sub-wrap .ctx-submenu {
+      display: none;
+      position: absolute;
+      left: 100%;
+      top: -0.3rem;
+      padding-left: 0;
+      min-width: 140px;
+      background: #1c1c24;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.6rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .ctx-sub-wrap:hover .ctx-submenu {
+      display: block;
+    }
     .ctx-item.ctx-sub {
       cursor: default;
     }
@@ -2134,4 +2202,11 @@
     .shape-img-placeholder svg {
       width: 40%;
       height: 40%;
+    }
+
+    .shape-layer.snap-grid {
+      background-image:
+        linear-gradient(rgba(99,102,241,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.08) 1px, transparent 1px);
+      background-size: 10px 10px;
     }

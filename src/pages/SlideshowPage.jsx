@@ -51,6 +51,8 @@ function SlideshowEditor() {
   const [ctxSlideIdx, setCtxSlideIdx] = useState(-1)
   const [ctxShapeData, setCtxShapeData] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
+  const [shortcutsVisible, setShortcutsVisible] = useState(false)
+  const [snapToGrid, setSnapToGrid] = useState(false)
   const [drawColor, setDrawColor] = useState('#ff4444')
   const [drawSize, setDrawSize] = useState(4)
   const drawColorRef = useRef('#ff4444')
@@ -116,14 +118,29 @@ function SlideshowEditor() {
         setCtxMenuPos(null); setCtxShapeMenuPos(null)
         if (lineDrawState) setLineDrawState(null)
         setShapePopupOpen(false)
+        setShortcutsVisible(false)
       }
+      if (e.key === '?' && !settingsVisible && !isInPresenterNotes && !isContentEditable) { e.preventDefault(); setShortcutsVisible(v => !v) }
       if ((e.key === 'l' || e.key === 'L') && fullscreen) { e.preventDefault(); if (!laserMode && drawMode) setDrawMode(false); setLaserMode(!laserMode) }
       if ((e.key === 'p' || e.key === 'P') && fullscreen) { e.preventDefault(); setPresenterMode(!presenterMode) }
       if ((e.key === 'd' || e.key === 'D') && fullscreen) { e.preventDefault(); if (!drawMode && laserMode) setLaserMode(false); setDrawMode(!drawMode) }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [settingsVisible, slides.length, current, fullscreen, laserMode, drawMode, presenterMode, prev, next, goTo, lineDrawState, duplicateSlide, slideShapes, selectedShapeId, setSlideShapes, showToast, setSelectedShapeId])
+  }, [settingsVisible, slides.length, current, fullscreen, laserMode, drawMode, presenterMode, prev, next, goTo, lineDrawState, duplicateSlide, slideShapes, selectedShapeId, setSlideShapes, showToast, setSelectedShapeId, shortcutsVisible])
+
+  useEffect(() => {
+    const onMouseDown = (e) => {
+      if (ctxMenuPos || ctxShapeMenuPos) {
+        if (!e.target.closest('.ctx-menu')) {
+          setCtxMenuPos(null)
+          setCtxShapeMenuPos(null)
+        }
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [ctxMenuPos, ctxShapeMenuPos])
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -440,6 +457,51 @@ function SlideshowEditor() {
     setTimeout(() => saveRef.current(), 0)
   }, [current, setSlideShapes, save])
 
+  const parsePct = (v) => parseFloat(v) || 0
+
+  const handleAlignShape = useCallback((dir, slideIdx, shape) => {
+    if (!shape || shape.type === 'line' || shape.type === 'arrow') return
+    const w = parsePct(shape.w)
+    const h = parsePct(shape.h)
+    let updates = {}
+    switch (dir) {
+      case 'left': updates.x = '0%'; break
+      case 'center': updates.x = ((100 - w) / 2) + '%'; break
+      case 'right': updates.x = (100 - w) + '%'; break
+      case 'top': updates.y = '0%'; break
+      case 'middle': updates.y = ((100 - h) / 2) + '%'; break
+      case 'bottom': updates.y = (100 - h) + '%'; break
+    }
+    setSlideShapes(prev => {
+      const s = { ...prev }
+      const arr = [...(s[slideIdx] || [])]
+      const idx = arr.findIndex(sh => sh.id === shape.id)
+      if (idx >= 0) { arr[idx] = { ...arr[idx], ...updates }; s[slideIdx] = arr }
+      return s
+    })
+    setTimeout(() => saveRef.current(), 0)
+  }, [setSlideShapes, save])
+
+  const handleDistribute = useCallback((dir, slideIdx) => {
+    const shapes = (slideShapes[slideIdx] || []).filter(s => s.type !== 'line' && s.type !== 'arrow')
+    if (shapes.length < 2) return
+    const sorted = [...shapes].sort((a, b) => dir === 'h' ? parsePct(a.x) - parsePct(b.x) : parsePct(a.y) - parsePct(b.y))
+    const totalSize = sorted.reduce((sum, s) => sum + (dir === 'h' ? parsePct(s.w) : parsePct(s.h)), 0)
+    const gap = (100 - totalSize) / (sorted.length - 1)
+    let pos = 0
+    const updates = {}
+    sorted.forEach((s, i) => {
+      updates[s.id] = dir === 'h' ? { x: pos + '%' } : { y: pos + '%' }
+      pos += (dir === 'h' ? parsePct(s.w) : parsePct(s.h)) + gap
+    })
+    setSlideShapes(prev => {
+      const s = { ...prev }
+      s[slideIdx] = (s[slideIdx] || []).map(sh => updates[sh.id] ? { ...sh, ...updates[sh.id] } : sh)
+      return s
+    })
+    setTimeout(() => saveRef.current(), 0)
+  }, [slideShapes, setSlideShapes, save])
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -552,7 +614,8 @@ function SlideshowEditor() {
                 <span className="slide-label">{slideNames[i] || 'Slide ' + (i + 1)}</span>
                 <span className="slide-number">{i + 1} / {slides.length}</span>
                 <ShapeLayer slideIndex={i} selectedShapeId={selectedShapeId} onShapeSelect={setSelectedShapeId}
-                  lineDrawState={lineDrawState} setLineDrawState={setLineDrawState} />
+                  lineDrawState={lineDrawState} setLineDrawState={setLineDrawState}
+                  snapToGrid={snapToGrid} />
               </div>
             )
           })}
@@ -673,6 +736,47 @@ function SlideshowEditor() {
 
       <SettingsModal visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
 
+      {shortcutsVisible && (
+        <div className="modal-overlay open" onClick={e => { if (e.target === e.currentTarget) setShortcutsVisible(false) }}>
+          <div className="modal shortcuts-modal">
+            <div className="modal-header">
+              <h2>Keyboard Shortcuts</h2>
+              <button className="modal-close" onClick={() => setShortcutsVisible(false)}>&times;</button>
+            </div>
+            <div className="modal-body shortcuts-body">
+              <div className="shortcuts-group">
+                <span className="shortcuts-group-label">Navigation</span>
+                <div className="shortcut-row"><kbd>&larr;</kbd><kbd>&rarr;</kbd><span>Previous / Next slide</span></div>
+                <div className="shortcut-row"><kbd>Home</kbd><span>Go to first slide</span></div>
+                <div className="shortcut-row"><kbd>End</kbd><span>Go to last slide</span></div>
+              </div>
+              <div className="shortcuts-group">
+                <span className="shortcuts-group-label">Fullscreen</span>
+                <div className="shortcut-row"><kbd>D</kbd><span>Toggle draw mode</span></div>
+                <div className="shortcut-row"><kbd>L</kbd><span>Toggle laser pointer</span></div>
+                <div className="shortcut-row"><kbd>P</kbd><span>Toggle presenter mode</span></div>
+              </div>
+              <div className="shortcuts-group">
+                <span className="shortcuts-group-label">Shapes</span>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>C</kbd><span>Copy selected shape</span></div>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>V</kbd><span>Paste shape</span></div>
+                <div className="shortcut-row"><kbd>Del</kbd><span>Delete selected shape</span></div>
+              </div>
+              <div className="shortcuts-group">
+                <span className="shortcuts-group-label">Slides</span>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>D</kbd><span>Duplicate current slide</span></div>
+              </div>
+              <div className="shortcuts-group">
+                <span className="shortcuts-group-label">General</span>
+                <div className="shortcut-row"><kbd>?</kbd><span>Show this cheat sheet</span></div>
+                <div className="shortcut-row"><kbd>Esc</kbd><span>Close menus / popups</span></div>
+                <div className="shortcut-row"><kbd>F11</kbd><span>Toggle fullscreen</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {ctxMenuPos && (
         <div className="ctx-menu show" style={{ left: ctxMenuPos.x + 'px', top: ctxMenuPos.y + 'px' }}
           onClick={e => e.stopPropagation()}>
@@ -693,8 +797,9 @@ function SlideshowEditor() {
           }}>Remove Image</div>
           <div className="ctx-item" onClick={() => { duplicateSlide(ctxSlideIdx); setCtxMenuPos(null) }}>Duplicate Slide</div>
           <div className="ctx-divider"></div>
-          <div className="ctx-item ctx-sub">Fit Mode</div>
-          <div className="ctx-submenu show" id="ctxFitSub">
+          <div className="ctx-sub-wrap">
+            <div className="ctx-item ctx-sub">Fit Mode ▸</div>
+            <div className="ctx-submenu" id="ctxFitSub">
             {['cover', 'contain', 'fill', 'original'].map(m => (
               <div key={m} className="ctx-item" onClick={() => {
                 const idx = ctxSlideIdx; if (idx < 0 || !slideUrls[idx]) return
@@ -703,6 +808,7 @@ function SlideshowEditor() {
                 setCtxMenuPos(null)
               }}>{m.charAt(0).toUpperCase() + m.slice(1)}</div>
             ))}
+          </div>
           </div>
           <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
@@ -795,6 +901,33 @@ function SlideshowEditor() {
             setTimeout(() => saveRef.current(), 0)
             setCtxShapeMenuPos(null)
           }}>Duplicate</div>
+          <div className="ctx-divider"></div>
+          <div className="ctx-item" onClick={() => {
+            setSnapToGrid(v => !v)
+            setCtxShapeMenuPos(null)
+          }}>{snapToGrid ? '✓ ' : ''}Snap to Grid</div>
+          <div className="ctx-divider"></div>
+          <div className="ctx-sub-wrap">
+            <div className="ctx-item ctx-sub">Align ▸</div>
+            <div className="ctx-submenu" id="ctxAlignSub">
+              {[{ d: 'left', l: 'Left' }, { d: 'center', l: 'Center' }, { d: 'right', l: 'Right' },
+                { d: 'top', l: 'Top' }, { d: 'middle', l: 'Middle' }, { d: 'bottom', l: 'Bottom' }].map(({ d, l }) => (
+                <div key={d} className="ctx-item" onClick={() => {
+                  if (ctxShapeData) handleAlignShape(d, ctxShapeData.slideIdx, ctxShapeData.shape)
+                  setCtxShapeMenuPos(null)
+                }}>{l}</div>
+              ))}
+            </div>
+          </div>
+          <div className="ctx-item" onClick={() => {
+            if (ctxShapeData) handleDistribute('h', ctxShapeData.slideIdx)
+            setCtxShapeMenuPos(null)
+          }}>Distribute Horizontally</div>
+          <div className="ctx-item" onClick={() => {
+            if (ctxShapeData) handleDistribute('v', ctxShapeData.slideIdx)
+            setCtxShapeMenuPos(null)
+          }}>Distribute Vertically</div>
+          <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
             if (!ctxShapeData) return
             const { slideIdx, shapeId } = ctxShapeData
