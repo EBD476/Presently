@@ -794,7 +794,7 @@ function SlideshowEditor() {
           <button id="shapeFloatBtn" title="Add shape" onClick={() => setShapePopupOpen(p => !p)}>+</button>
           {shapePopupOpen && (
             <div className="shape-popup show">
-              {['rect', 'circle', 'line', 'arrow', 'text', 'image'].map(type => (
+              {['rect', 'circle', 'line', 'arrow', 'text', 'image', 'table'].map(type => (
                 <button key={type} className="shape-popup-btn" onClick={() => handleAddShape(type)}>
                   <svg viewBox="0 0 24 24" width="16" height="16">
                     {type === 'rect' && <rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"/>}
@@ -803,6 +803,7 @@ function SlideshowEditor() {
                     {type === 'arrow' && <><line x1="3" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="currentColor" strokeWidth="2"/></>}
                     {type === 'text' && <><polyline points="4 7 4 4 20 4 20 7" fill="none" stroke="currentColor" strokeWidth="2"/><line x1="9" y1="20" x2="15" y2="20" stroke="currentColor" strokeWidth="2"/><line x1="12" y1="4" x2="12" y2="20" stroke="currentColor" strokeWidth="2"/></>}
                     {type === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="currentColor" strokeWidth="2"/><polyline points="21 15 16 10 5 21" fill="none" stroke="currentColor" strokeWidth="2"/></>}
+                    {type === 'table' && <><path d="M3 3h18v18H3z" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="1.5"/><line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" strokeWidth="1.5"/><line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" strokeWidth="1.5"/><line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" strokeWidth="1.5"/></>}
                   </svg>
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>

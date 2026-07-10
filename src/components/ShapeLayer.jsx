@@ -142,6 +142,23 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
         lbl.removeEventListener('blur', onBlur)
       }
       lbl.addEventListener('blur', onBlur)
+    } else if (shape.type === 'table') {
+      const td = e.target.closest('td')
+      if (!td) return
+      td.contentEditable = true
+      td.focus()
+      const row = parseInt(td.dataset.row)
+      const col = parseInt(td.dataset.col)
+      const onBlur = () => {
+        td.contentEditable = false
+        const data = [...(shape.cellData || [].map(() => []))]
+        if (!data[row]) data[row] = []
+        data[row][col] = td.textContent || ''
+        updateShape(shape.id, { cellData: data })
+        setTimeout(() => saveRef.current(), 0)
+        td.removeEventListener('blur', onBlur)
+      }
+      td.addEventListener('blur', onBlur)
     } else if (shape.type === 'image') {
       const input = document.createElement('input')
       input.type = 'file'
@@ -549,6 +566,11 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
   } else if (shape.type === 'image') {
     style.border = 'none'
     style.borderRadius = '0'
+  } else if (shape.type === 'table') {
+    style.background = shape.fill && shape.fill !== 'transparent' ? hexToRgba(shape.fill, shape.fillOpacity) : 'transparent'
+    style.border = 'none'
+    style.borderRadius = '0'
+    style.overflow = 'hidden'
   }
 
   useLayoutEffect(() => {
@@ -604,7 +626,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
     const label = labelRef.current
     const el = elRef.current
     if (!label || !el) return
-    if (shape.type === 'line' || shape.type === 'arrow' || shape.type === 'image') return
+    if (shape.type === 'line' || shape.type === 'arrow' || shape.type === 'image' || shape.type === 'table') return
 
     const fit = () => {
       const maxSize = shape.fontSize || (shape.type === 'text' ? 28 : 14)
@@ -673,6 +695,39 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
             </svg>
           </div>
         )
+      )}
+      {shape.type === 'table' && (
+        <table className="shape-table"
+          style={{
+            borderCollapse: 'collapse',
+            width: '100%', height: '100%',
+            border: (shape.strokeWidth || 1) + 'px solid ' + (shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : '#475569'),
+            fontFamily: shape.fontFamily || 'Poppins',
+            fontSize: (shape.fontSize || 14) + 'px'
+          }}>
+          <tbody>
+            {Array.from({ length: shape.rows || 3 }, (_, ri) => (
+              <tr key={ri}>
+                {Array.from({ length: shape.cols || 3 }, (_, ci) => (
+                  <td key={ci} data-row={ri} data-col={ci}
+                    style={{
+                      border: '1px solid ' + (shape.stroke ? hexToRgba(shape.stroke, shape.strokeOpacity) : '#475569'),
+                      padding: '2px 4px',
+                      textAlign: 'center',
+                      verticalAlign: 'middle',
+                      color: shape.color || '#e2e8f0',
+                      fontSize: 'inherit',
+                      fontFamily: 'inherit',
+                      minWidth: 0,
+                      wordBreak: 'break-word'
+                    }}>
+                    {(shape.cellData && shape.cellData[ri] && shape.cellData[ri][ci]) || ''}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
       {(shape.type === 'rect' || shape.type === 'circle') && shape.text && (
         <div ref={labelRef} className="shape-label"

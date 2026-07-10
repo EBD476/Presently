@@ -53,6 +53,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
   const isText = shape.type === 'text'
   const isImage = shape.type === 'image'
   const isLine = shape.type === 'line' || shape.type === 'arrow'
+  const isTable = shape.type === 'table'
 
   return (
     <div className="shape-props show" id="shapeProps" ref={panelRef}
@@ -96,6 +97,40 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
             document.body.appendChild(input); input.click(); input.remove()
           }}>Browse</button>
         </span>
+      )}
+      {isTable && (
+        <>
+          <span className="shape-prop-group" id="shapeTableSizeGroup">
+            <label>Rows</label><input type="number" value={shape.rows || 3} min={1} max={20} style={{ width: 36 }}
+              onChange={e => {
+                const n = parseInt(e.target.value) || 1
+                const cellData = [...(shape.cellData || [])]
+                while (cellData.length < n) cellData.push([])
+                while (cellData.length > n) cellData.pop()
+                update({ rows: n, cellData })
+              }} />
+            <label style={{ marginLeft: 6 }}>Cols</label><input type="number" value={shape.cols || 3} min={1} max={20} style={{ width: 36 }}
+              onChange={e => {
+                const n = parseInt(e.target.value) || 1
+                const cellData = [...(shape.cellData || [])]
+                for (let r = 0; r < cellData.length; r++) {
+                  cellData[r] = [...(cellData[r] || [])]
+                  while (cellData[r].length < n) cellData[r].push('')
+                  while (cellData[r].length > n) cellData[r].pop()
+                }
+                update({ cols: n, cellData })
+              }} />
+          </span>
+          <span className="shape-prop-group"><label>Color</label><input type="color" value={shape.color || '#e2e8f0'} onChange={e => update({ color: e.target.value })} /></span>
+          <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={shape.fontSize || 14} min={6} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
+          <span className="shape-prop-group" id="shapeFontGroup">
+            <select value={shape.fontFamily || 'Poppins'} style={{ width: 90 }} onChange={e => update({ fontFamily: e.target.value })}>
+              <option value="Poppins">Poppins</option><option value="Roboto">Roboto</option><option value="Courier New">Courier New</option>
+              <option value="Vazirmatn">Vazirmatn</option><option value="Lalezar">Lalezar</option><option value="Readex Pro">Readex Pro</option>
+              <option value="Markazi Text">Markazi Text</option><option value="Georgia">Georgia</option><option value="Arial">Arial</option>
+            </select>
+          </span>
+        </>
       )}
       {!isText && !isImage && !isLine && (
         <>
