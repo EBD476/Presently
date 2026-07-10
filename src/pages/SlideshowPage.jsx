@@ -126,6 +126,14 @@ function SlideshowEditor() {
       if ((e.key === 'l' || e.key === 'L') && fullscreen) { e.preventDefault(); if (!laserMode && drawMode) setDrawMode(false); setLaserMode(!laserMode) }
       if ((e.key === 'p' || e.key === 'P') && fullscreen) { e.preventDefault(); setPresenterMode(!presenterMode) }
       if ((e.key === 'd' || e.key === 'D') && fullscreen) { e.preventDefault(); if (!drawMode && laserMode) setLaserMode(false); setDrawMode(!drawMode) }
+      if (e.key === 'F5') {
+        e.preventDefault()
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {})
+        } else {
+          document.exitFullscreen().catch(() => {})
+        }
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -607,14 +615,19 @@ function SlideshowEditor() {
               <div className="skeleton" style={{ width: 24, height: 14, borderRadius: '4px', marginLeft: 6 }}></div>
             </div>
           </div>
-          <div className="sidebar-thumbnails">
-            {[1,2,3,4,5].map(i => (
+          <div class="sidebar-thumbnails" id="thumbnails">
+            <div class="skeleton skeleton-thumb" id="skeletonThumb1"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+            <div class="skeleton skeleton-thumb" id="skeletonThumb2"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line short"></div></div>
+            <div class="skeleton skeleton-thumb" id="skeletonThumb3"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+          </div>
+          {/* <div className="sidebar-thumbnails"> */}
+            {/* {[1,2,3,4,5].map(i => (
               <div key={i} className="skeleton-thumb">
                 <div className="skeleton-thumb-box"></div>
                 <div className="skeleton-thumb-line"></div>
               </div>
-            ))}
-          </div>
+            ))} */}
+          {/* </div> */}
         </div>
         <div className="main-area">
           <div className="slideshow-container" id="slideshow">

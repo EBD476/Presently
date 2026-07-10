@@ -70,14 +70,19 @@ export default function Sidebar({ collapsed, onToggle }) {
     <div className={'sidebar' + (collapsed ? ' collapsed' : '')} id="sidebar">
       {loading ? (
         <div className="sidebar-loading">
-          <div className="sidebar-header">
+          {/* <div className="sidebar-header">
             <div className="sidebar-header-left" style={{ gap: '0.5rem', width: '100%' }}>
               <div className="skeleton" style={{ width: 18, height: 18, borderRadius: '4px' }} />
               <div className="skeleton" style={{ flex: 1, height: 16, borderRadius: '4px' }} />
               <div className="skeleton" style={{ width: 24, height: 16, borderRadius: '4px' }} />
             </div>
+          </div> */}
+          <div class="sidebar-thumbnails" id="thumbnails">test
+            <div class="skeleton skeleton-thumb" id="skeletonThumb1">test1<div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+            <div class="skeleton skeleton-thumb" id="skeletonThumb2">test2<div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line short"></div></div>
+            <div class="skeleton skeleton-thumb" id="skeletonThumb3">test3<div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
           </div>
-          <div className="sidebar-thumbnails">
+          {/* <div className="sidebar-thumbnails">
             {Array.from({ length: slides.length || 5 }, (_, i) => (
               <div key={i} className="skeleton-thumb skeleton">
                 <div className="skeleton-thumb-box" />
@@ -87,7 +92,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
           <div className="skeleton" style={{ margin: '0.75rem', height: 40, borderRadius: '0.5rem' }} />
         </div>
       ) : (

@@ -72,6 +72,12 @@ export default function SlideImage({ slideIndex }) {
       if (!activeResize) {
         setActiveResize(dragCandidate)
         setDragCandidate(null)
+        const cursorMap = {
+          'nw': 'nwse-resize', 'n': 'ns-resize', 'ne': 'nesw-resize',
+          'e': 'ew-resize', 'se': 'nwse-resize', 's': 'ns-resize',
+          'sw': 'nesw-resize', 'w': 'ew-resize', 'move': 'move'
+        }
+        document.body.style.cursor = cursorMap[dragCandidate.handle] || 'default'
       }
 
       const h = act.handle
@@ -118,6 +124,7 @@ export default function SlideImage({ slideIndex }) {
         wrapRef.current.style.height = h
         setTimeout(() => saveRef.current(), 0)
       }
+      document.body.style.cursor = ''
       setActiveResize(null)
     }
 
