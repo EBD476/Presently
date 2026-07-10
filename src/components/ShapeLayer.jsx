@@ -133,11 +133,12 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     if (shape.type === 'text') {
       const lbl = e.currentTarget.querySelector('.shape-label')
       if (!lbl) return
+      lbl.innerText = shape.text || 'Text'
       lbl.contentEditable = true
       lbl.focus()
       const onBlur = () => {
         lbl.contentEditable = false
-        updateShape(shape.id, { text: lbl.textContent || '' })
+        updateShape(shape.id, { text: lbl.innerText || '' })
         setTimeout(() => saveRef.current(), 0)
         lbl.removeEventListener('blur', onBlur)
       }
@@ -177,21 +178,17 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
       input.click()
       input.remove()
     } else {
-      if (!shape.text) shape.text = ''
-      updateShape(shape.id, { text: shape.text || '' })
-      const lbl = e.currentTarget.querySelector('.shape-label') || (() => {
-        const d = document.createElement('div'); d.className = 'shape-label'; e.currentTarget.appendChild(d); return d
-      })()
-      lbl.textContent = shape.text
-      lbl.style.color = shape.color || '#ffffff'
-      lbl.style.fontSize = (shape.fontSize || 14) + 'px'
-      lbl.style.fontFamily = shape.fontFamily || 'Poppins'
-      lbl.style.textAlign = shape.textAlign || 'center'
+      const lbl = e.currentTarget.querySelector('.shape-label')
+      if (!lbl) return
+      lbl.style.visibility = 'visible'
+      lbl.style.pointerEvents = 'auto'
+      lbl.innerText = shape.text || ''
       lbl.contentEditable = true
       lbl.focus()
       const onBlur = () => {
         lbl.contentEditable = false
-        updateShape(shape.id, { text: lbl.textContent || '' })
+        lbl.style.pointerEvents = 'none'
+        updateShape(shape.id, { text: lbl.innerText || '' })
         setTimeout(() => saveRef.current(), 0)
         lbl.removeEventListener('blur', onBlur)
       }
@@ -527,6 +524,30 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
   )
 }
 
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function renderListContent(shape) {
+  const text = shape.text
+  if (!text) return escapeHtml('Text')
+  if (shape.listType === 'bullet') {
+    const align = shape.textAlign || 'center'
+    const lines = text.split('\n')
+    return '<ul style="margin:0;padding-left:1.2em;text-align:' + align + ';list-style-position:inside">' +
+      lines.map(l => '<li style="text-align:' + align + '">' + escapeHtml(l.replace(/^[-*]\s+/, '')) + '</li>').join('') +
+      '</ul>'
+  }
+  if (shape.listType === 'numbered') {
+    const align = shape.textAlign || 'center'
+    const lines = text.split('\n')
+    return '<ol style="margin:0;padding-left:1.2em;text-align:' + align + ';list-style-position:inside">' +
+      lines.map(l => '<li style="text-align:' + align + '">' + escapeHtml(l.replace(/^\d+[.)]\s+/, '')) + '</li>').join('') +
+      '</ol>'
+  }
+  return escapeHtml(text)
+}
+
 function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu, updateShape }) {
   const elRef = useRef(null)
   const labelRef = useRef(null)
@@ -629,6 +650,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
     if (shape.type === 'line' || shape.type === 'arrow' || shape.type === 'image' || shape.type === 'table') return
 
     const fit = () => {
+      if (label.isContentEditable) return
       const maxSize = shape.fontSize || (shape.type === 'text' ? 28 : 14)
       const pw = el.offsetWidth
       const ph = el.offsetHeight
@@ -681,8 +703,8 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
             textAlign: shape.textAlign || 'center',
             direction: shape.direction || 'ltr',
             display: 'block'
-          }}>
-          {shape.text || 'Text'}
+          }}
+          dangerouslySetInnerHTML={{ __html: renderListContent(shape) }}>
         </div>
       )}
       {shape.type === 'image' && (
@@ -729,16 +751,24 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
           </tbody>
         </table>
       )}
-      {(shape.type === 'rect' || shape.type === 'circle') && shape.text && (
+      {(shape.type === 'rect' || shape.type === 'circle') && (
         <div ref={labelRef} className="shape-label"
           style={{
             color: shape.color || '#ffffff',
             fontSize: (shape.fontSize || 14) + 'px',
             fontFamily: shape.fontFamily || 'Poppins',
-            textAlign: shape.textAlign || 'center',
-            display: 'flex'
+            textAlign: shape.textAlign || 'left',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            overflow: 'hidden',
+            visibility: shape.text ? 'visible' : 'hidden',
+            pointerEvents: 'none'
           }}>
-          {shape.text}
+          <div style={{ textAlign: shape.textAlign || 'left', whiteSpace: 'pre-wrap', width: '100%', wordBreak: 'break-word' }}>
+            {shape.text || ''}
+          </div>
         </div>
       )}
       {(shape.type === 'line' || shape.type === 'arrow') && (

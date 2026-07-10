@@ -2190,6 +2190,20 @@
       color: #fff;
       border-color: #6366f1;
     }
+    .shape-props .shape-list-btn {
+      padding: 0.15rem 0.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      min-width: 30px;
+      min-height: 22px;
+    }
+    .shape-props .shape-list-btn.active {
+      background: #6366f1;
+      color: #fff;
+      border-color: #6366f1;
+    }
     .shape-props input[type="range"] {
       width: 50px;
       cursor: pointer;

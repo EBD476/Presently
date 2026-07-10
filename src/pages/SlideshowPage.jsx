@@ -97,8 +97,8 @@ function SlideshowEditor() {
       }
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev() }
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next() }
-      if (e.key === 'Home') { e.preventDefault(); goTo(0) }
-      if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1) }
+      if (e.key === 'Home' && !isContentEditable) { e.preventDefault(); goTo(0) }
+      if (e.key === 'End' && !isContentEditable) { e.preventDefault(); goTo(slides.length - 1) }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); /* undo delete image */ }
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         if (!selectedShapeId) return
@@ -152,10 +152,13 @@ function SlideshowEditor() {
           setCtxShapeMenuPos(null)
         }
       }
+      if (shapePopupOpen && !e.target.closest('.shape-popup') && !e.target.closest('#shapeFloatBtn')) {
+        setShapePopupOpen(false)
+      }
     }
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
-  }, [ctxMenuPos, ctxShapeMenuPos])
+  }, [ctxMenuPos, ctxShapeMenuPos, shapePopupOpen])
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -444,6 +447,7 @@ function SlideshowEditor() {
 
   const handleContainerMouseDown = useCallback((e) => {
     if (e.button !== 0) return
+    if (fullscreen) return
     if (e.target.closest('.shape') || e.target.closest('.nav-arrow') ||
         e.target.closest('.dot') || e.target.closest('.shape-props') ||
         e.target.closest('.ctx-menu') || e.target.closest('.img-props')) return
@@ -470,7 +474,7 @@ function SlideshowEditor() {
       bubbles: true, cancelable: true, view: window
     })
     wrap.dispatchEvent(ev)
-  }, [current, slideUrls])
+  }, [current, slideUrls, fullscreen])
 
   const handleContextMenu = useCallback((e) => {
     const slideEl = e.target.closest('.slide')

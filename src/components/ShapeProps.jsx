@@ -75,6 +75,26 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
             <button className={'shape-format-btn italic' + (props?.fontStyle === 'italic' ? ' active' : '')} onClick={() => update({ fontStyle: props?.fontStyle === 'italic' ? 'normal' : 'italic' })}><em>I</em></button>
             <button className={'shape-format-btn underline' + (props?.textDecoration === 'underline' ? ' active' : '')} onClick={() => update({ textDecoration: props?.textDecoration === 'underline' ? 'none' : 'underline' })}><u>U</u></button>
           </span>
+          <span className="shape-prop-group" id="shapeListGroup">
+            <button className={'shape-list-btn' + (props?.listType === 'bullet' ? ' active' : '')} title="Bullet list" onClick={() => {
+              if (props?.listType === 'bullet') {
+                const lines = (shape.text || '').split('\n').map(l => l.replace(/^[-*]\s+/, ''))
+                update({ listType: undefined, text: lines.join('\n') })
+              } else {
+                const lines = (shape.text || '').split('\n').map((l, i) => '- ' + l.replace(/^[-*\d]+[.)]\s+/, ''))
+                update({ listType: 'bullet', text: lines.join('\n') })
+              }
+            }}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg></button>
+            <button className={'shape-list-btn' + (props?.listType === 'numbered' ? ' active' : '')} title="Numbered list" onClick={() => {
+              if (props?.listType === 'numbered') {
+                const lines = (shape.text || '').split('\n').map(l => l.replace(/^\d+[.)]\s+/, ''))
+                update({ listType: undefined, text: lines.join('\n') })
+              } else {
+                const lines = (shape.text || '').split('\n').map((l, i) => (i + 1) + '. ' + l.replace(/^[-*\d]+[.)]\s+/, ''))
+                update({ listType: 'numbered', text: lines.join('\n') })
+              }
+            }}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><text x="2" y="10" fontSize="9" fill="currentColor" stroke="none">1</text><text x="2" y="16" fontSize="9" fill="currentColor" stroke="none">2</text><text x="2" y="22" fontSize="9" fill="currentColor" stroke="none">3</text></svg></button>
+          </span>
           <span className="shape-prop-group" id="shapeAlignGroup">
             <button className={'shape-align-btn' + (props?.textAlign === 'left' ? ' active' : '')} data-align="left" onClick={() => update({ textAlign: 'left' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="7" x2="15" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="12" y2="17"/></svg></button>
             <button className={'shape-align-btn' + (props?.textAlign === 'center' ? ' active' : '')} data-align="center" onClick={() => update({ textAlign: 'center' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="6" y1="17" x2="18" y2="17"/></svg></button>
@@ -139,6 +159,24 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
           <span className="shape-prop-group" id="shapeStrokeGroup"><label>Stroke</label><input type="color" value={shape.stroke || '#ffffff'} onChange={e => update({ stroke: e.target.value })} /></span>
           <span className="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.strokeOpacity == null ? 1 : shape.strokeOpacity} style={{ width: 48 }} onChange={e => update({ strokeOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.strokeOpacity == null ? 1 : shape.strokeOpacity) * 100)}%</label></span>
           <span className="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" value={shape.strokeWidth || 2} min={0} max={20} style={{ width: 36 }} onChange={e => update({ strokeWidth: parseFloat(e.target.value) || 0 })} /></span>
+          {(shape.type === 'rect' || shape.type === 'circle') && (
+            <>
+              <span className="shape-prop-group"><label>Color</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
+              <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={props?.fontSize || 14} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
+              <span className="shape-prop-group" id="shapeFontGroup">
+                <select value={props?.fontFamily || 'Poppins'} style={{ width: 90 }} onChange={e => update({ fontFamily: e.target.value })}>
+                  <option value="Poppins">Poppins</option><option value="Roboto">Roboto</option><option value="Courier New">Courier New</option>
+                  <option value="Vazirmatn">Vazirmatn</option><option value="Lalezar">Lalezar</option><option value="Readex Pro">Readex Pro</option>
+                  <option value="Markazi Text">Markazi Text</option><option value="Georgia">Georgia</option><option value="Arial">Arial</option>
+                </select>
+              </span>
+              <span className="shape-prop-group" id="shapeAlignGroup">
+                <button className={'shape-align-btn' + (props?.textAlign === 'left' ? ' active' : '')} data-align="left" onClick={() => update({ textAlign: 'left' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="7" x2="15" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="12" y2="17"/></svg></button>
+                <button className={'shape-align-btn' + (props?.textAlign === 'center' ? ' active' : '')} data-align="center" onClick={() => update({ textAlign: 'center' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="7" x2="19" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="6" y1="17" x2="18" y2="17"/></svg></button>
+                <button className={'shape-align-btn' + (props?.textAlign === 'right' ? ' active' : '')} data-align="right" onClick={() => update({ textAlign: 'right' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="9" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="17" x2="21" y2="17"/></svg></button>
+              </span>
+            </>
+          )}
         </>
       )}
       {isLine && (
