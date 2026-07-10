@@ -1908,6 +1908,126 @@
     }
     .fullscreen .shape-popup { display: none !important; }
 
+    .library-btn {
+      position: absolute;
+      bottom: 1rem;
+      right: 4rem;
+      z-index: 40;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(232, 241, 243, 0.938);
+      color: #c0c0d0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, color 0.2s;
+    }
+    .library-btn:hover {
+      background: rgba(255,255,255,0.15);
+      color: rgb(97, 94, 94);
+    }
+    .fullscreen .library-btn { display: none; }
+
+    .shape-library {
+      position: absolute;
+      bottom: 3.6rem;
+      right: 0.5rem;
+      z-index: 41;
+      background: rgba(28,28,36,0.95);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.75rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 14rem;
+      max-height: 18rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .shape-library-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: #a0a0b8;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .shape-library-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0;
+      line-height: 1;
+    }
+    .shape-library-close:hover { color: #fff; }
+    .shape-library-body {
+      overflow-y: auto;
+      padding: 0.25rem;
+      flex: 1;
+    }
+    .shape-library-empty {
+      padding: 1.5rem 0.75rem;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .shape-library-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.5rem;
+      border-radius: 0.4rem;
+      transition: background 0.15s;
+    }
+    .shape-library-item:hover { background: rgba(255,255,255,0.06); }
+    .shape-library-preview {
+      width: 28px; height: 28px;
+      border-radius: 0.25rem;
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .shape-library-preview svg {
+      width: 16px; height: 16px;
+      stroke: #a0a0b8;
+    }
+    .shape-library-name {
+      flex: 1;
+      font-size: 0.8rem;
+      color: #c0c0d0;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .shape-library-actions {
+      display: flex;
+      gap: 0.15rem;
+      flex-shrink: 0;
+    }
+    .shape-library-insert, .shape-library-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0.3rem;
+      border-radius: 0.2rem;
+      font-size: 1rem;
+      line-height: 1;
+      color: #6b7280;
+      transition: color 0.15s;
+    }
+    .shape-library-insert:hover { color: #6366f1; }
+    .shape-library-del:hover { color: #ef4444; }
+
     /* ---- Shape properties panel ---- */
     .shape-props {
       position: absolute;

@@ -55,6 +55,11 @@ function SlideshowEditor() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
+  const [shapeLibrary, setShapeLibrary] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('shapeLibrary') || '{}') } catch { return {} }
+  })
+  const [showShapeLibrary, setShowShapeLibrary] = useState(false)
+  const [saveShapeDialogOpen, setSaveShapeDialogOpen] = useState(false)
   const [drawColor, setDrawColor] = useState('#ff4444')
   const [drawSize, setDrawSize] = useState(4)
   const drawColorRef = useRef('#ff4444')
@@ -596,6 +601,37 @@ function SlideshowEditor() {
     localStorage.setItem('slideTemplates', JSON.stringify(templates))
   }, [])
 
+  const saveShapeToLibrary = useCallback((name) => {
+    if (!ctxShapeData) return
+    const existing = { ...shapeLibrary }
+    existing[name] = JSON.parse(JSON.stringify({ ...ctxShapeData.shape, id: undefined }))
+    localStorage.setItem('shapeLibrary', JSON.stringify(existing))
+    setShapeLibrary(existing)
+    showToast('Shape saved to library')
+  }, [ctxShapeData, shapeLibrary, showToast])
+
+  const insertFromLibrary = useCallback((name) => {
+    const shape = shapeLibrary[name]
+    if (!shape) return
+    const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+    setSlideShapes(prev => {
+      const s = { ...prev }
+      s[current] = [...(s[current] || []), { ...JSON.parse(JSON.stringify(shape)), id }]
+      return s
+    })
+    setSelectedShapeId(id)
+    setTimeout(() => saveRef.current(), 0)
+    setShowShapeLibrary(false)
+    showToast('Shape inserted')
+  }, [shapeLibrary, current, setSlideShapes, save, showToast])
+
+  const deleteFromLibrary = useCallback((name) => {
+    const existing = { ...shapeLibrary }
+    delete existing[name]
+    localStorage.setItem('shapeLibrary', JSON.stringify(existing))
+    setShapeLibrary(existing)
+  }, [shapeLibrary])
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -774,8 +810,57 @@ function SlideshowEditor() {
             </div>
           )}
 
+          <button className="library-btn" title="Shape Library"
+            onClick={() => setShowShapeLibrary(v => !v)}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </button>
+
+          {showShapeLibrary && (
+            <div className="shape-library">
+              <div className="shape-library-header">
+                <span>Shape Library</span>
+                <button className="shape-library-close" onClick={() => setShowShapeLibrary(false)}>&times;</button>
+              </div>
+              <div className="shape-library-body">
+                {Object.keys(shapeLibrary).length === 0 ? (
+                  <div className="shape-library-empty">No saved shapes.<br/>Right-click a shape to save it.</div>
+                ) : Object.entries(shapeLibrary).map(([name, shape]) => (
+                  <div key={name} className="shape-library-item">
+                    <div className="shape-library-preview">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        {shape.type === 'rect' && <rect x="3" y="3" width="18" height="18" rx="1"/>}
+                        {shape.type === 'circle' && <circle cx="12" cy="12" r="9"/>}
+                        {shape.type === 'line' && <line x1="3" y1="21" x2="21" y2="3"/>}
+                        {shape.type === 'arrow' && <><line x1="3" y1="12" x2="19" y2="12"/><polyline points="14 7 19 12 14 17"/></>}
+                        {shape.type === 'text' && <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>}
+                        {shape.type === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>}
+                      </svg>
+                    </div>
+                    <span className="shape-library-name">{name}</span>
+                    <div className="shape-library-actions">
+                      <button className="shape-library-insert" title="Insert"
+                        onClick={e => { e.stopPropagation(); insertFromLibrary(name) }}>+</button>
+                      <button className="shape-library-del" title="Delete"
+                        onClick={e => { e.stopPropagation(); deleteFromLibrary(name) }}>&times;</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <PromptDialog show={saveShapeDialogOpen}
+        message="Enter a name for this shape:"
+        placeholder="Shape name"
+        onCancel={() => setSaveShapeDialogOpen(false)}
+        onConfirm={(name) => { saveShapeToLibrary(name); setSaveShapeDialogOpen(false) }} />
 
       {presenterMode && (
         <div id="presenterPanel" className="show">
@@ -1050,6 +1135,10 @@ function SlideshowEditor() {
             if (ctxShapeData) handleDistribute('v', ctxShapeData.slideIdx)
             setCtxShapeMenuPos(null)
           }}>Distribute Vertically</div>
+          <div className="ctx-item" onClick={() => {
+            setSaveShapeDialogOpen(true)
+            setCtxShapeMenuPos(null)
+          }}>Save to Library</div>
           <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
             if (!ctxShapeData) return
