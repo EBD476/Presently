@@ -9,6 +9,7 @@ import ShapeLayer from '../components/ShapeLayer'
 import ShapeProps from '../components/ShapeProps'
 import Navigation from '../components/Navigation'
 import SettingsModal from '../components/SettingsModal'
+import PromptDialog from '../components/PromptDialog'
 import { getDefaultShape } from '../utils'
 import '../styles/slideshow.css'
 
@@ -23,7 +24,7 @@ function SlideshowEditor() {
     deckName, slides, current,
     slideUrls, setSlideUrls, resizeData, setResizeData,
     slideMode, setSlideMode, slideNames, setSlideNames,
-    slideBgColors, slideNotes, setSlideNotes,
+    slideBgColors, setSlideBgColors, slideNotes, setSlideNotes,
     slideShapes, setSlideShapes, loading,
     drawData, setDrawData, drawDataRef,
     loadDeck, save, goTo, next, prev,
@@ -53,6 +54,7 @@ function SlideshowEditor() {
   const [fullscreen, setFullscreen] = useState(false)
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(false)
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
   const [drawColor, setDrawColor] = useState('#ff4444')
   const [drawSize, setDrawSize] = useState(4)
   const drawColorRef = useRef('#ff4444')
@@ -184,6 +186,8 @@ function SlideshowEditor() {
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
   }, [current, setSlideUrls, setResizeData, save, showToast])
+
+  useEffect(() => { setSelectedShapeId(null) }, [current])
 
   // Timer interval
   useEffect(() => {
@@ -404,11 +408,10 @@ function SlideshowEditor() {
       document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
       return
     }
-    const wrap = e.target.closest('.slide-img-wrap')
-    if (wrap) {
+    if (e.target.closest('.slide-img-wrap')) {
       setSelectedShapeId(null)
-      document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
-      wrap.classList.add('selected')
+      setCtxMenuPos(null)
+      setCtxShapeMenuPos(null)
       return
     }
     setCtxMenuPos(null)
@@ -416,7 +419,45 @@ function SlideshowEditor() {
     setSelectedShapeId(null)
     document.querySelectorAll('.slide-img-wrap.selected').forEach(el => el.classList.remove('selected'))
     document.querySelectorAll('.slide-url-bar.show').forEach(el => el.classList.remove('show'))
-  }, [])
+    const slideEl = e.target.closest('.slide')
+    if (slideEl) {
+      const idx = parseInt(slideEl.dataset.slide)
+      if (!isNaN(idx) && slideUrls[idx]) {
+        const wrap = slideEl.querySelector('.slide-img-wrap')
+        if (wrap) wrap.classList.add('selected')
+      }
+    }
+  }, [slideUrls])
+
+  const handleContainerMouseDown = useCallback((e) => {
+    if (e.button !== 0) return
+    if (e.target.closest('.shape') || e.target.closest('.nav-arrow') ||
+        e.target.closest('.dot') || e.target.closest('.shape-props') ||
+        e.target.closest('.ctx-menu') || e.target.closest('.img-props')) return
+    const slideEl = e.target.closest('.slide')
+    if (!slideEl || !slideEl.classList.contains('active')) return
+    if (!slideUrls[current]?.trim()) return
+    const wrap = slideEl.querySelector('.slide-img-wrap')
+    if (!wrap || !wrap.classList.contains('selected')) return
+    const handles = wrap.querySelectorAll('.resize-handle')
+    for (const handle of handles) {
+      const r = handle.getBoundingClientRect()
+      if (e.clientX >= r.left && e.clientX <= r.right &&
+          e.clientY >= r.top && e.clientY <= r.bottom) {
+        const ev = new MouseEvent('mousedown', {
+          clientX: e.clientX, clientY: e.clientY,
+          bubbles: true, cancelable: true, view: window
+        })
+        handle.dispatchEvent(ev)
+        return
+      }
+    }
+    const ev = new MouseEvent('mousedown', {
+      clientX: e.clientX, clientY: e.clientY,
+      bubbles: true, cancelable: true, view: window
+    })
+    wrap.dispatchEvent(ev)
+  }, [current, slideUrls])
 
   const handleContextMenu = useCallback((e) => {
     const slideEl = e.target.closest('.slide')
@@ -502,6 +543,51 @@ function SlideshowEditor() {
     setTimeout(() => saveRef.current(), 0)
   }, [slideShapes, setSlideShapes, save])
 
+  const getTemplates = () => {
+    try { return JSON.parse(localStorage.getItem('slideTemplates') || '{}') } catch { return {} }
+  }
+
+  const saveTemplate = useCallback((name, slideIdx) => {
+    const templates = getTemplates()
+    templates[name] = {
+      shapes: JSON.parse(JSON.stringify(slideShapes[slideIdx] || [])),
+      bgColor: slideBgColors[slideIdx] || null,
+      imageUrl: slideUrls[slideIdx] || null,
+      imageMode: slideMode[slideIdx] || null,
+      resizeData: resizeData[slideIdx] ? { ...resizeData[slideIdx] } : null
+    }
+    localStorage.setItem('slideTemplates', JSON.stringify(templates))
+    showToast('Template saved')
+  }, [slideShapes, slideBgColors, slideUrls, slideMode, resizeData, showToast])
+
+  const applyTemplate = useCallback((name, slideIdx) => {
+    const templates = getTemplates()
+    const tmpl = templates[name]
+    if (!tmpl) return
+    setSlideShapes(prev => {
+      const s = { ...prev }
+      const existing = s[slideIdx] || []
+      s[slideIdx] = [...existing, ...(tmpl.shapes || []).map(sh => ({
+        ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+      }))]
+      return s
+    })
+    if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [slideIdx]: tmpl.bgColor }))
+    if (tmpl.imageUrl) {
+      setSlideUrls(prev => ({ ...prev, [slideIdx]: tmpl.imageUrl }))
+      if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [slideIdx]: tmpl.imageMode }))
+      if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [slideIdx]: tmpl.resizeData }))
+    }
+    setTimeout(() => saveRef.current(), 0)
+    showToast('Template applied')
+  }, [setSlideShapes, setSlideBgColors, setSlideUrls, setSlideMode, setResizeData, save, showToast])
+
+  const deleteTemplate = useCallback((name) => {
+    const templates = getTemplates()
+    delete templates[name]
+    localStorage.setItem('slideTemplates', JSON.stringify(templates))
+  }, [])
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -554,7 +640,7 @@ function SlideshowEditor() {
 
       <div className="main-area">
         <div className="slideshow-container" id="slideshow" ref={containerRef}
-          onClick={handleContainerClick} onContextMenu={handleContextMenu}>
+          onClick={handleContainerClick} onMouseDown={handleContainerMouseDown} onContextMenu={handleContextMenu}>
 
           {slides.map((_, i) => {
             const bgColor = slideBgColors[i]
@@ -777,6 +863,12 @@ function SlideshowEditor() {
         </div>
       )}
 
+      <PromptDialog show={templateDialogOpen}
+        message="Enter a name for this slide template:"
+        placeholder="Template name"
+        onCancel={() => setTemplateDialogOpen(false)}
+        onConfirm={(name) => { saveTemplate(name, ctxSlideIdx); setTemplateDialogOpen(false) }} />
+
       {ctxMenuPos && (
         <div className="ctx-menu show" style={{ left: ctxMenuPos.x + 'px', top: ctxMenuPos.y + 'px' }}
           onClick={e => e.stopPropagation()}>
@@ -796,6 +888,24 @@ function SlideshowEditor() {
             setCtxMenuPos(null)
           }}>Remove Image</div>
           <div className="ctx-item" onClick={() => { duplicateSlide(ctxSlideIdx); setCtxMenuPos(null) }}>Duplicate Slide</div>
+          <div className="ctx-item" onClick={() => { setTemplateDialogOpen(true); setCtxMenuPos(null) }}>Save as Template</div>
+          <div className="ctx-sub-wrap">
+            <div className="ctx-item ctx-sub">Apply Template ▸</div>
+            <div className="ctx-submenu" id="ctxTemplateSub">
+              {Object.keys(getTemplates()).length === 0 ? (
+                <div className="ctx-item" style={{ cursor: 'default', color: '#6b7280' }}>No templates</div>
+              ) : Object.entries(getTemplates()).map(([name]) => (
+                <div key={name} className="ctx-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ flex: 1, cursor: 'pointer' }} onClick={() => {
+                    applyTemplate(name, ctxSlideIdx)
+                    setCtxMenuPos(null)
+                  }}>{name}</span>
+                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = getTemplates()[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides') }}>All</span>
+                  <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast('Template deleted') }}>&times;</span>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="ctx-divider"></div>
           <div className="ctx-sub-wrap">
             <div className="ctx-item ctx-sub">Fit Mode ▸</div>

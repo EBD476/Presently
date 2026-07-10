@@ -68,6 +68,30 @@ export default function Sidebar({ collapsed, onToggle }) {
 
   return (
     <div className={'sidebar' + (collapsed ? ' collapsed' : '')} id="sidebar">
+      {loading ? (
+        <div className="sidebar-loading">
+          <div className="sidebar-header">
+            <div className="sidebar-header-left" style={{ gap: '0.5rem', width: '100%' }}>
+              <div className="skeleton" style={{ width: 18, height: 18, borderRadius: '4px' }} />
+              <div className="skeleton" style={{ flex: 1, height: 16, borderRadius: '4px' }} />
+              <div className="skeleton" style={{ width: 24, height: 16, borderRadius: '4px' }} />
+            </div>
+          </div>
+          <div className="sidebar-thumbnails">
+            {Array.from({ length: slides.length || 5 }, (_, i) => (
+              <div key={i} className="skeleton-thumb skeleton">
+                <div className="skeleton-thumb-box" />
+                <div>
+                  <div className="skeleton-thumb-line" />
+                  <div className="skeleton-thumb-line short" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="skeleton" style={{ margin: '0.75rem', height: 40, borderRadius: '0.5rem' }} />
+        </div>
+      ) : (
+      <>
       <div className="sidebar-header">
         <div className="sidebar-header-left">
           <a href="/" id="decksLink" title="All Decks" style={{ color: '#a0a0b8', textDecoration: 'none', fontSize: '0.9rem', lineHeight: 1, marginRight: '0.25rem', display: 'flex' }}>
@@ -81,50 +105,38 @@ export default function Sidebar({ collapsed, onToggle }) {
         <button className="sidebar-close" id="sidebarClose" aria-label="Close sidebar" onClick={onToggle}>&times;</button>
       </div>
       <div className="sidebar-thumbnails" id="thumbnails">
-        {loading ? (
-          Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="skeleton-thumb skeleton">
-              <div className="skeleton-thumb-box" />
-              <div>
-                <div className="skeleton-thumb-line" />
-                <div className="skeleton-thumb-line short" />
+        {slides.map((_, i) => {
+          const url = slideUrls[i]
+          const bgColor = slideBgColors[i]
+          const thumbStyle = {}
+          if (url && url.trim()) {
+            thumbStyle.backgroundImage = 'url("' + resolveUrl(url).replace(/"/g, '\\"') + '")'
+          }
+          if (bgColor) thumbStyle.backgroundColor = bgColor
+          return (
+            <div key={i} className={'thumb-item' + (i === current ? ' active' : '')}
+              data-index={i} draggable
+              onDragStart={e => handleDragStart(e, i)}
+              onDragOver={e => handleDragOver(e, i)}
+              onDragLeave={handleDragLeave}
+              onDrop={e => handleDrop(e, i)}
+              onDragEnd={() => { setDragSrc(null); setDropIdx(null) }}
+              onClick={() => goTo(i)}
+              onContextMenu={e => { e.preventDefault(); setCtxMenu({ idx: i, x: e.clientX, y: e.clientY }) }}>
+              <div className="thumb-preview" style={thumbStyle}>
+                {(!url || !url.trim()) && <span className="thumb-placeholder">&#x1F5BC;</span>}
               </div>
+              <div className="thumb-info">
+                <span className="thumb-label">{getSlideName(i)}</span>
+                <span className="thumb-desc">{url && url.trim() ? (url.split('/').pop() || 'Image') : 'No image'}</span>
+              </div>
+              <button className="thumb-dup-btn" title="Duplicate slide" onClick={e => { e.stopPropagation(); duplicateSlide(i) }}>&#x29C9;</button>
+              {slides.length > 1 && (
+                <button className="thumb-del-btn" onClick={e => { e.stopPropagation(); setDeleteTarget(i) }}>x</button>
+              )}
             </div>
-          ))
-        ) : (
-          slides.map((_, i) => {
-            const url = slideUrls[i]
-            const bgColor = slideBgColors[i]
-            const thumbStyle = {}
-            if (url && url.trim()) {
-              thumbStyle.backgroundImage = 'url("' + resolveUrl(url).replace(/"/g, '\\"') + '")'
-            }
-            if (bgColor) thumbStyle.backgroundColor = bgColor
-            return (
-              <div key={i} className={'thumb-item' + (i === current ? ' active' : '')}
-                data-index={i} draggable
-                onDragStart={e => handleDragStart(e, i)}
-                onDragOver={e => handleDragOver(e, i)}
-                onDragLeave={handleDragLeave}
-                onDrop={e => handleDrop(e, i)}
-                onDragEnd={() => { setDragSrc(null); setDropIdx(null) }}
-                onClick={() => goTo(i)}
-                onContextMenu={e => { e.preventDefault(); setCtxMenu({ idx: i, x: e.clientX, y: e.clientY }) }}>
-                <div className="thumb-preview" style={thumbStyle}>
-                  {(!url || !url.trim()) && <span className="thumb-placeholder">&#x1F5BC;</span>}
-                </div>
-                <div className="thumb-info">
-                  <span className="thumb-label">{getSlideName(i)}</span>
-                  <span className="thumb-desc">{url && url.trim() ? (url.split('/').pop() || 'Image') : 'No image'}</span>
-                </div>
-                <button className="thumb-dup-btn" title="Duplicate slide" onClick={e => { e.stopPropagation(); duplicateSlide(i) }}>&#x29C9;</button>
-                {slides.length > 1 && (
-                  <button className="thumb-del-btn" onClick={e => { e.stopPropagation(); setDeleteTarget(i) }}>x</button>
-                )}
-              </div>
-            )
-          })
-        )}
+          )
+        })}
         {dropIdx !== null && dragSrc !== null && dropIdx !== dragSrc && dropIdx !== dragSrc + 1 && (
           <div className="drop-placeholder" />
         )}
@@ -152,6 +164,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         message={'Delete Slide ' + ((deleteTarget ?? 0) + 1) + '?'}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => { removeSlide(deleteTarget); setDeleteTarget(null) }} />
+      </>)}
     </div>
   )
 }

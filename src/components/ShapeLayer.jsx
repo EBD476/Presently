@@ -491,7 +491,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
   return (
     <div ref={slideRef} className={'shape-layer' + (snapToGrid ? ' snap-grid' : '')}
       onMouseDown={lineDrawState && slideIndex === current ? handleLineDrawStart : undefined}
-      style={{ position: 'absolute', inset: 0, pointerEvents: lineDrawState && slideIndex === current ? 'auto' : 'none', cursor: lineDrawState && slideIndex === current ? 'crosshair' : 'default', zIndex: 10 }}>
+      style={{ position: 'absolute', inset: 0, pointerEvents: slideIndex === current ? 'auto' : 'none', cursor: lineDrawState && slideIndex === current ? 'crosshair' : 'default' }}>
       {shapes.map(shape => (
         <ShapeEl key={shape.id} shape={shape} isSelected={selectedShapeId === shape.id}
           onMouseDown={e => handleShapeMouseDown(e, shape)}
@@ -704,7 +704,7 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
           )}
         </>
       )}
-      {(shape.type !== 'line' && shape.type !== 'arrow' && shape.type !== 'image') && (
+      {(shape.type !== 'line' && shape.type !== 'arrow') && (
         <>
           {['nw','n','ne','e','se','s','sw','w'].map(dir => (
             <div key={dir} className={'resize-handle ' + dir} />
