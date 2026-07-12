@@ -825,41 +825,76 @@ function SlideshowEditor() {
             </svg>
           </button>
 
-          {showShapeLibrary && (
-            <div className="shape-library">
-              <div className="shape-library-header">
-                <span>Shape Library</span>
-                <button className="shape-library-close" onClick={() => setShowShapeLibrary(false)}>&times;</button>
-              </div>
-              <div className="shape-library-body">
-                {Object.keys(shapeLibrary).length === 0 ? (
-                  <div className="shape-library-empty">No saved shapes.<br/>Right-click a shape to save it.</div>
-                ) : Object.entries(shapeLibrary).map(([name, shape]) => (
-                  <div key={name} className="shape-library-item">
-                    <div className="shape-library-preview">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        {shape.type === 'rect' && <rect x="3" y="3" width="18" height="18" rx="1"/>}
-                        {shape.type === 'circle' && <circle cx="12" cy="12" r="9"/>}
-                        {shape.type === 'line' && <line x1="3" y1="21" x2="21" y2="3"/>}
-                        {shape.type === 'arrow' && <><line x1="3" y1="12" x2="19" y2="12"/><polyline points="14 7 19 12 14 17"/></>}
-                        {shape.type === 'text' && <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>}
-                        {shape.type === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>}
-                      </svg>
-                    </div>
-                    <span className="shape-library-name">{name}</span>
-                    <div className="shape-library-actions">
-                      <button className="shape-library-insert" title="Insert"
-                        onClick={e => { e.stopPropagation(); insertFromLibrary(name) }}>+</button>
-                      <button className="shape-library-del" title="Delete"
-                        onClick={e => { e.stopPropagation(); deleteFromLibrary(name) }}>&times;</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      <div className={'right-sidebar' + (showShapeLibrary ? ' open' : '')}>
+        <div className="right-sidebar-header">
+          <span>Shape Library</span>
+          <button className="right-sidebar-close" onClick={() => setShowShapeLibrary(false)}>&times;</button>
+        </div>
+        <div className="right-sidebar-body">
+          <div className="right-sidebar-section">
+            <div className="right-sidebar-section-title">Presets</div>
+            <div className="rhs-preset-grid">
+              {[
+                { type: 'rect', label: 'Rect', svg: '<rect x="2" y="2" width="20" height="20" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'circle', label: 'Circle', svg: '<circle cx="12" cy="12" r="9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'line', label: 'Line', svg: '<line x1="3" y1="21" x2="21" y2="3" stroke="#818cf8" stroke-width="2"/>' },
+                { type: 'arrow', label: 'Arrow', svg: '<line x1="3" y1="12" x2="19" y2="12" stroke="#818cf8" stroke-width="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="#818cf8" stroke-width="2"/>' },
+                { type: 'text', label: 'Text', svg: '<rect x="3" y="6" width="18" height="12" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" fill="#fff" font-size="8" font-family="Poppins">T</text>' },
+                { type: 'image', label: 'Image', svg: '<rect x="3" y="3" width="18" height="18" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="#818cf8"/><polyline points="21 15 16 10 5 21" fill="none" stroke="#818cf8" stroke-width="1.5"/>' },
+              ].map(p => (
+                <button key={p.type} className="rhs-preset-item" title={'Add ' + p.label}
+                  onClick={() => handleAddShape(p.type)}>
+                  <svg viewBox="0 0 24 24" width="28" height="28" dangerouslySetInnerHTML={{ __html: p.svg }} />
+                  <span>{p.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="right-sidebar-section">
+            <div className="right-sidebar-section-title">Saved Shapes</div>
+            <div className="rhs-library-list">
+              {Object.keys(shapeLibrary).length === 0 ? (
+                <div className="rhs-library-empty">
+                  No saved shapes.<br/>Right-click a shape to save it.
+                </div>
+              ) : Object.entries(shapeLibrary).map(([name, shape]) => (
+                <div key={name} className="rhs-library-item"
+                  onClick={() => insertFromLibrary(name)}>
+                  <div className="rhs-library-preview">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#a0a0b8" strokeWidth="1.5">
+                      {shape.type === 'rect' && <rect x="3" y="3" width="18" height="18" rx="2" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'circle' && <circle cx="12" cy="12" r="9" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'line' && <line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" strokeWidth="2"/>}
+                      {shape.type === 'arrow' && <><line x1="3" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="currentColor" strokeWidth="2"/></>}
+                      {shape.type === 'text' && <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>}
+                      {shape.type === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></>}
+                    </svg>
+                  </div>
+                  <div className="rhs-library-info">
+                    <span className="rhs-library-name">{name}</span>
+                    <span className="rhs-library-type">{shape.type}</span>
+                  </div>
+                  <button className="rhs-library-del" title="Delete"
+                    onClick={e => { e.stopPropagation(); deleteFromLibrary(name) }}>&times;</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button className="right-sidebar-toggle" id="rightSidebarToggle" aria-label="Toggle shape library"
+        onClick={() => setShowShapeLibrary(v => !v)}
+        title="Shape Library">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          <line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+      </button>
 
       <PromptDialog show={saveShapeDialogOpen}
         message="Enter a name for this shape:"
