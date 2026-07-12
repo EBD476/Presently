@@ -6,6 +6,13 @@ export function useToast() {
   return useContext(ToastContext)
 }
 
+const ICONS = {
+  success: '\u2713',
+  error: '\u2717',
+  info: '\u2139',
+  warning: '\u26A0'
+}
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
 
@@ -17,7 +24,7 @@ export function ToastProvider({ children }) {
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id))
       }, 300)
-    }, 3500)
+    }, 4000)
   }, [])
 
   return (
@@ -27,7 +34,9 @@ export function ToastProvider({ children }) {
         {toasts.map(t => (
           <div key={t.id} className={'toast toast-' + t.type}
             style={{ opacity: t.fading ? 0 : 1, transition: 'opacity 0.3s' }}>
-            {t.msg}
+            <span className="toast-icon">{ICONS[t.type] || ''}</span>
+            <span className="toast-msg">{t.msg}</span>
+            <div className="toast-progress" />
           </div>
         ))}
       </div>

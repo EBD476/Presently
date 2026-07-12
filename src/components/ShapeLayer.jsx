@@ -205,10 +205,11 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     if (!shapeDragState || shapeDragState.idx !== slideIndex) return
 
     const onMouseMove = (e) => {
+      if (shapeDragState.idx !== slideIndex) return
       const slideEl = slideRef.current
       if (!slideEl) return
       const shapeEl = slideEl.querySelector('.shape[data-shape-id="' + shapeDragState.shapeId + '"]')
-      if (!shapeEl) { setShapeDragState(null); return }
+      if (!shapeEl) return
 
       const h = shapeDragState.handle
 

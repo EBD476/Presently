@@ -573,7 +573,7 @@ function SlideshowEditor() {
     templates[name] = data
     setSlideTemplates(templates)
     try { await saveTemplateToDb(name, data) } catch {}
-    showToast('Template saved')
+    showToast('Template saved', 'success')
   }, [slideShapes, slideBgColors, slideUrls, slideMode, resizeData, slideTemplates, setSlideTemplates, showToast])
 
   const applyTemplate = useCallback((name, slideIdx) => {
@@ -594,7 +594,7 @@ function SlideshowEditor() {
       if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [slideIdx]: tmpl.resizeData }))
     }
     setTimeout(() => saveRef.current(), 0)
-    showToast('Template applied')
+    showToast('Template applied', 'success')
   }, [slideTemplates, setSlideShapes, setSlideBgColors, setSlideUrls, setSlideMode, setResizeData, save, showToast])
 
   const deleteTemplate = useCallback(async (name) => {
@@ -611,7 +611,7 @@ function SlideshowEditor() {
     existing[name] = data
     setShapeLibrary(existing)
     try { await apiSaveShape(name, data) } catch {}
-    showToast('Shape saved to library')
+    showToast('Shape saved to library', 'success')
   }, [ctxShapeData, shapeLibrary, setShapeLibrary, showToast])
 
   const insertFromLibrary = useCallback((name) => {
@@ -626,7 +626,7 @@ function SlideshowEditor() {
     setSelectedShapeId(id)
     setTimeout(() => saveRef.current(), 0)
     setShowShapeLibrary(false)
-    showToast('Shape inserted')
+    showToast('Shape inserted', 'success')
   }, [shapeLibrary, current, setSlideShapes, save, showToast])
 
   const deleteFromLibrary = useCallback(async (name) => {
@@ -1003,8 +1003,8 @@ function SlideshowEditor() {
                     applyTemplate(name, ctxSlideIdx)
                     setCtxMenuPos(null)
                   }}>{name}</span>
-                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = slideTemplates[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides') }}>All</span>
-                  <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast('Template deleted') }}>&times;</span>
+                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = slideTemplates[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides', 'success') }}>All</span>
+                  <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast('Template deleted', 'success') }}>&times;</span>
                 </div>
               ))}
             </div>
