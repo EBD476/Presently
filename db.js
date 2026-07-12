@@ -53,6 +53,22 @@ function createTables() {
       value TEXT
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS shape_library (
+      name TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      created TEXT,
+      modified TEXT
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS slide_templates (
+      name TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      created TEXT,
+      modified TEXT
+    )
+  `);
   save();
 }
 

@@ -157,6 +157,92 @@ app.post('/api/upload', (req, res) => {
   }
 });
 
+app.get('/api/shapes', (req, res) => {
+  try {
+    const rows = db.query('SELECT * FROM shape_library ORDER BY name');
+    const shapes = {};
+    for (const row of rows) {
+      shapes[row.name] = JSON.parse(row.data);
+    }
+    res.json({ shapes });
+  } catch (err) {
+    console.error('GET /api/shapes:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/shapes', (req, res) => {
+  try {
+    const { name, data } = req.body;
+    if (!name || !data) return res.status(400).json({ error: 'Name and data required' });
+    const now = new Date().toISOString();
+    const existing = db.get('SELECT * FROM shape_library WHERE name = ?', [name]);
+    if (existing) {
+      db.query('UPDATE shape_library SET data = ?, modified = ? WHERE name = ?', [JSON.stringify(data), now, name]);
+    } else {
+      db.query('INSERT INTO shape_library (name, data, created, modified) VALUES (?, ?, ?, ?)', [name, JSON.stringify(data), now, now]);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/shapes:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/shapes/:name', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    db.query('DELETE FROM shape_library WHERE name = ?', [name]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/shapes/:name:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/templates', (req, res) => {
+  try {
+    const rows = db.query('SELECT * FROM slide_templates ORDER BY name');
+    const templates = {};
+    for (const row of rows) {
+      templates[row.name] = JSON.parse(row.data);
+    }
+    res.json({ templates });
+  } catch (err) {
+    console.error('GET /api/templates:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/templates', (req, res) => {
+  try {
+    const { name, data } = req.body;
+    if (!name || !data) return res.status(400).json({ error: 'Name and data required' });
+    const now = new Date().toISOString();
+    const existing = db.get('SELECT * FROM slide_templates WHERE name = ?', [name]);
+    if (existing) {
+      db.query('UPDATE slide_templates SET data = ?, modified = ? WHERE name = ?', [JSON.stringify(data), now, name]);
+    } else {
+      db.query('INSERT INTO slide_templates (name, data, created, modified) VALUES (?, ?, ?, ?)', [name, JSON.stringify(data), now, now]);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/templates:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/templates/:name', (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    db.query('DELETE FROM slide_templates WHERE name = ?', [name]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/templates/:name:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/image/:id', (req, res) => {
   try {
     const img = db.get('SELECT * FROM images WHERE id = ?', [parseInt(req.params.id)]);

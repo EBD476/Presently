@@ -13,6 +13,18 @@ export default function App() {
         <Route path="/slideshow" element={<SlideshowPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <div className="app-footer"
+        style={{
+          fontFamily: 'poppins,tahoma',
+          position: 'fixed', bottom: 0, left: 0,
+          padding: '6px 12px',
+          fontSize: '11px', color: '#94a3b8',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          userSelect: 'none'
+        }}>
+        <span>© {new Date().getFullYear()} Presently App - EBD</span>
+      </div>
     </ToastProvider>
   )
 }

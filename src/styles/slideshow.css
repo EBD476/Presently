@@ -2405,6 +2405,7 @@
       height: 40%;
     }
 
+    :fullscreen .app-footer { display: none !important; }
     .shape-layer.snap-grid {
       background-image:
         linear-gradient(rgba(99,102,241,0.08) 1px, transparent 1px),

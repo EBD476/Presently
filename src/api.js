@@ -68,6 +68,48 @@ export async function uploadImage(file) {
   })
 }
 
+export async function fetchShapeLibrary() {
+  const resp = await fetch(API_BASE + '/shapes')
+  if (!resp.ok) throw new Error('Failed to fetch shape library')
+  const data = await resp.json()
+  return data.shapes || {}
+}
+
+export async function saveShapeToLibrary(name, data) {
+  const resp = await fetch(API_BASE + '/shapes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, data })
+  })
+  if (!resp.ok) throw new Error('Failed to save shape')
+}
+
+export async function deleteShapeFromLibrary(name) {
+  const resp = await fetch(API_BASE + '/shapes/' + encodeURIComponent(name), { method: 'DELETE' })
+  if (!resp.ok) throw new Error('Failed to delete shape')
+}
+
+export async function fetchTemplates() {
+  const resp = await fetch(API_BASE + '/templates')
+  if (!resp.ok) throw new Error('Failed to fetch templates')
+  const data = await resp.json()
+  return data.templates || {}
+}
+
+export async function saveTemplateToDb(name, data) {
+  const resp = await fetch(API_BASE + '/templates', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, data })
+  })
+  if (!resp.ok) throw new Error('Failed to save template')
+}
+
+export async function deleteTemplateFromDb(name) {
+  const resp = await fetch(API_BASE + '/templates/' + encodeURIComponent(name), { method: 'DELETE' })
+  if (!resp.ok) throw new Error('Failed to delete template')
+}
+
 export function getDefaultApiBase() {
   const port = window.location.port || '3002'
   return 'http://localhost:' + port

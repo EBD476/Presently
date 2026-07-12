@@ -22,6 +22,8 @@ export function SlideshowProvider({ children }) {
   const [drawData, setDrawData] = useState({})
   const [apiBaseUrl, setApiBaseUrl] = useState(getDefaultApiBase())
   const [expandedSlide, setExpandedSlide] = useState(null)
+  const [shapeLibrary, setShapeLibrary] = useState({})
+  const [slideTemplates, setSlideTemplates] = useState({})
   const slidesRef = useRef(slides)
   const drawDataRef = useRef(drawData)
   const saveRef = useRef(null)
@@ -186,6 +188,7 @@ export function SlideshowProvider({ children }) {
     slideBgColors, setSlideBgColors, slideNotes, setSlideNotes,
     slideShapes, setSlideShapes, loading, drawData, setDrawData,
     apiBaseUrl, setApiBaseUrl, expandedSlide, setExpandedSlide,
+    shapeLibrary, setShapeLibrary, slideTemplates, setSlideTemplates,
     loadDeck, save, goTo, next, prev, addSlide, removeSlide,
     duplicateSlide, reorderSlides, renameDeck, slidesRef, drawDataRef
   }

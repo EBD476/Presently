@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from
 import { useSearchParams,useNavigate  } from 'react-router-dom'
 import { SlideshowProvider, useSlideshow } from '../context/SlideshowContext'
 import { useToast } from '../components/Toast'
-import { resolveUrl, uploadImage } from '../api'
+import { resolveUrl, uploadImage, fetchShapeLibrary, saveShapeToLibrary as apiSaveShape, deleteShapeFromLibrary, fetchTemplates, saveTemplateToDb, deleteTemplateFromDb } from '../api'
 import Sidebar from '../components/Sidebar'
 import SlideImage from '../components/SlideImage'
 import ShapeLayer from '../components/ShapeLayer'
@@ -28,7 +28,9 @@ function SlideshowEditor() {
     slideShapes, setSlideShapes, loading,
     drawData, setDrawData, drawDataRef,
     loadDeck, save, goTo, next, prev,
-    duplicateSlide
+    duplicateSlide,
+    shapeLibrary, setShapeLibrary,
+    slideTemplates, setSlideTemplates
   } = useSlideshow()
 
   const containerRef = useRef(null)
@@ -55,9 +57,6 @@ function SlideshowEditor() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
   const [snapToGrid, setSnapToGrid] = useState(false)
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false)
-  const [shapeLibrary, setShapeLibrary] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('shapeLibrary') || '{}') } catch { return {} }
-  })
   const [showShapeLibrary, setShowShapeLibrary] = useState(false)
   const [saveShapeDialogOpen, setSaveShapeDialogOpen] = useState(false)
   const [drawColor, setDrawColor] = useState('#ff4444')
@@ -80,6 +79,8 @@ function SlideshowEditor() {
     const name = deckParam || localStorage.getItem('deckName') || 'Default'
     if (deckParam) localStorage.setItem('deckName', name)
     loadDeck(name)
+    fetchShapeLibrary().then(s => setShapeLibrary(s)).catch(() => {})
+    fetchTemplates().then(t => setSlideTemplates(t)).catch(() => {})
   }, [deckParam])
 
   useEffect(() => {
@@ -560,26 +561,23 @@ function SlideshowEditor() {
     setTimeout(() => saveRef.current(), 0)
   }, [slideShapes, setSlideShapes, save])
 
-  const getTemplates = () => {
-    try { return JSON.parse(localStorage.getItem('slideTemplates') || '{}') } catch { return {} }
-  }
-
-  const saveTemplate = useCallback((name, slideIdx) => {
-    const templates = getTemplates()
-    templates[name] = {
+  const saveTemplate = useCallback(async (name, slideIdx) => {
+    const templates = { ...slideTemplates }
+    const data = {
       shapes: JSON.parse(JSON.stringify(slideShapes[slideIdx] || [])),
       bgColor: slideBgColors[slideIdx] || null,
       imageUrl: slideUrls[slideIdx] || null,
       imageMode: slideMode[slideIdx] || null,
       resizeData: resizeData[slideIdx] ? { ...resizeData[slideIdx] } : null
     }
-    localStorage.setItem('slideTemplates', JSON.stringify(templates))
+    templates[name] = data
+    setSlideTemplates(templates)
+    try { await saveTemplateToDb(name, data) } catch {}
     showToast('Template saved')
-  }, [slideShapes, slideBgColors, slideUrls, slideMode, resizeData, showToast])
+  }, [slideShapes, slideBgColors, slideUrls, slideMode, resizeData, slideTemplates, setSlideTemplates, showToast])
 
   const applyTemplate = useCallback((name, slideIdx) => {
-    const templates = getTemplates()
-    const tmpl = templates[name]
+    const tmpl = slideTemplates[name]
     if (!tmpl) return
     setSlideShapes(prev => {
       const s = { ...prev }
@@ -597,22 +595,24 @@ function SlideshowEditor() {
     }
     setTimeout(() => saveRef.current(), 0)
     showToast('Template applied')
-  }, [setSlideShapes, setSlideBgColors, setSlideUrls, setSlideMode, setResizeData, save, showToast])
+  }, [slideTemplates, setSlideShapes, setSlideBgColors, setSlideUrls, setSlideMode, setResizeData, save, showToast])
 
-  const deleteTemplate = useCallback((name) => {
-    const templates = getTemplates()
+  const deleteTemplate = useCallback(async (name) => {
+    const templates = { ...slideTemplates }
     delete templates[name]
-    localStorage.setItem('slideTemplates', JSON.stringify(templates))
-  }, [])
+    setSlideTemplates(templates)
+    try { await deleteTemplateFromDb(name) } catch {}
+  }, [slideTemplates, setSlideTemplates])
 
-  const saveShapeToLibrary = useCallback((name) => {
+  const saveShapeToLibrary = useCallback(async (name) => {
     if (!ctxShapeData) return
+    const data = JSON.parse(JSON.stringify({ ...ctxShapeData.shape, id: undefined }))
     const existing = { ...shapeLibrary }
-    existing[name] = JSON.parse(JSON.stringify({ ...ctxShapeData.shape, id: undefined }))
-    localStorage.setItem('shapeLibrary', JSON.stringify(existing))
+    existing[name] = data
     setShapeLibrary(existing)
+    try { await apiSaveShape(name, data) } catch {}
     showToast('Shape saved to library')
-  }, [ctxShapeData, shapeLibrary, showToast])
+  }, [ctxShapeData, shapeLibrary, setShapeLibrary, showToast])
 
   const insertFromLibrary = useCallback((name) => {
     const shape = shapeLibrary[name]
@@ -629,12 +629,12 @@ function SlideshowEditor() {
     showToast('Shape inserted')
   }, [shapeLibrary, current, setSlideShapes, save, showToast])
 
-  const deleteFromLibrary = useCallback((name) => {
+  const deleteFromLibrary = useCallback(async (name) => {
     const existing = { ...shapeLibrary }
     delete existing[name]
-    localStorage.setItem('shapeLibrary', JSON.stringify(existing))
     setShapeLibrary(existing)
-  }, [shapeLibrary])
+    try { await deleteShapeFromLibrary(name) } catch {}
+  }, [shapeLibrary, setShapeLibrary])
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -995,15 +995,15 @@ function SlideshowEditor() {
           <div className="ctx-sub-wrap">
             <div className="ctx-item ctx-sub">Apply Template ▸</div>
             <div className="ctx-submenu" id="ctxTemplateSub">
-              {Object.keys(getTemplates()).length === 0 ? (
+              {Object.keys(slideTemplates).length === 0 ? (
                 <div className="ctx-item" style={{ cursor: 'default', color: '#6b7280' }}>No templates</div>
-              ) : Object.entries(getTemplates()).map(([name]) => (
+              ) : Object.entries(slideTemplates).map(([name]) => (
                 <div key={name} className="ctx-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ flex: 1, cursor: 'pointer' }} onClick={() => {
                     applyTemplate(name, ctxSlideIdx)
                     setCtxMenuPos(null)
                   }}>{name}</span>
-                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = getTemplates()[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides') }}>All</span>
+                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = slideTemplates[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides') }}>All</span>
                   <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast('Template deleted') }}>&times;</span>
                 </div>
               ))}
