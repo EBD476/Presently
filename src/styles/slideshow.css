@@ -233,7 +233,7 @@
 
     .sidebar-add-btn {
       flex-shrink: 0;
-      margin: 0.5rem 0.75rem 0.75rem;
+      margin: 0.8rem 0.75rem 1.75rem;
       padding: 0.4rem;
       border-radius: 0.5rem;
       background: rgba(255, 255, 255, 0.04);
@@ -1149,8 +1149,8 @@
       border: 1px solid rgba(28, 28, 36, 0.9);
       border-right: none;
       color: #c0c0d0;
-      width: 36px;
-      height: 56px;
+      width: 28px;
+      height: 52px;
       border-radius: 8px 0 0 8px;
       cursor: pointer;
       font-size: 1rem;
@@ -1246,7 +1246,7 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
-      padding: 0.6rem 0.25rem;
+      padding: 0.1rem 0.25rem;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 10px;
@@ -2187,6 +2187,7 @@
       align-items: center;
       justify-content: center;
       transition: background 0.2s, color 0.2s;
+      display: none;
     }
     .library-btn:hover {
       background: rgba(255,255,255,0.15);
@@ -2385,7 +2386,7 @@
       pointer-events: none;
       z-index: 10;
     }
-    .shape-layer .shape {
+    .slide.active .shape-layer .shape {
       pointer-events: auto;
     }
     .shape-popup.show {

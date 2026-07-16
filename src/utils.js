@@ -31,6 +31,11 @@ export function getDefaultShape(type) {
     case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0, color: '#000000' }
     case 'image': return { ...base, type: 'image', w: '25%', h: '25%', src: '', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0 }
     case 'table': return { ...base, type: 'table', w: '40%', h: '30%', fill: '#1e293b', fillOpacity: 0.6, stroke: '#475569', strokeWidth: 1, rows: 3, cols: 3, cellData: [['','',''],['','',''],['','','']], fontSize: 14, color: '#e2e8f0', fontFamily: 'Poppins' }
+    case 'triangle': return { ...base, type: 'triangle', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '50,0 0,100 100,100' }
+    case 'diamond': return { ...base, type: 'diamond', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '50,0 100,50 50,100 0,50' }
+    case 'star': return { ...base, type: 'star', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35' }
+    case 'pentagon': return { ...base, type: 'pentagon', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '50,0 100,38 82,100 18,100 0,38' }
+    case 'hexagon': return { ...base, type: 'hexagon', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '25,0 75,0 100,50 75,100 25,100 0,50' }
     default: return { ...base, type: 'rect' }
   }
 }

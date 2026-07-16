@@ -159,7 +159,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
           <span className="shape-prop-group" id="shapeStrokeGroup"><label>Stroke</label><input type="color" value={shape.stroke || '#ffffff'} onChange={e => update({ stroke: e.target.value })} /></span>
           <span className="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.strokeOpacity == null ? 1 : shape.strokeOpacity} style={{ width: 48 }} onChange={e => update({ strokeOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.strokeOpacity == null ? 1 : shape.strokeOpacity) * 100)}%</label></span>
           <span className="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" value={shape.strokeWidth || 2} min={0} max={20} style={{ width: 36 }} onChange={e => update({ strokeWidth: parseFloat(e.target.value) || 0 })} /></span>
-          {(shape.type === 'rect' || shape.type === 'circle') && (
+          {(shape.type === 'rect' || shape.type === 'circle' || shape.type === 'triangle' || shape.type === 'diamond' || shape.type === 'star' || shape.type === 'pentagon' || shape.type === 'hexagon') && (
             <>
               <span className="shape-prop-group"><label>Color</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
               <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={props?.fontSize || 14} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>

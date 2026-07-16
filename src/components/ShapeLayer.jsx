@@ -17,6 +17,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
   const lineDrawStartRef = useRef(null)
   const finishingRef = useRef(false)
   const saveRef = useRef(save)
+  const dragDataRef = useRef(null)
   useLayoutEffect(() => { saveRef.current = save })
 
   const shapes = slideShapes[slideIndex] || []
@@ -70,6 +71,8 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     if (e.button !== 0) return
     e.stopPropagation()
     onShapeSelect(shape.id)
+    console.log('[select] shapeId', shape.id, 'slide', slideIndex + 1)
+    dragDataRef.current = { slideIndex, shapeId: shape.id, shape: { ...shape } }
 
     const el = e.currentTarget
     const isHandle = e.target.classList.contains('resize-handle')
@@ -281,17 +284,34 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     }
 
     const onMouseUp = () => {
-      if (!shapeDragState) return
+      if (!shapeDragState) { setShapeDragState(null); return }
+      const dd = dragDataRef.current
+      if (!dd) { setShapeDragState(null); return }
+      const targetSlideIdx = dd.slideIndex
       const slideEl = slideRef.current
-      if (!slideEl || shapeDragState.idx !== slideIndex) { setShapeDragState(null); return }
+      if (!slideEl || shapeDragState.idx !== targetSlideIdx) { setShapeDragState(null); return }
       const shapeEl = slideEl.querySelector('.shape[data-shape-id="' + shapeDragState.shapeId + '"]')
       if (!shapeEl) { setShapeDragState(null); return }
-      const shape = findShapeRef.current(shapeDragState.shapeId)
+
+      const shape = dd.shape
       if (!shape) { setShapeDragState(null); return }
+
+      const commitUpdates = (id, updates) => {
+        setSlideShapes(prev => {
+          const s = { ...prev }
+          const arr = [...(s[targetSlideIdx] || [])]
+          const idx = arr.findIndex(sh => sh.id === id)
+          if (idx >= 0) {
+            arr[idx] = { ...arr[idx], ...updates }
+            s[targetSlideIdx] = arr
+          }
+          return s
+        })
+      }
 
       if (shapeDragState.handle === 'rotate') {
         const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
-        if (match) updateShapeRef.current(shape.id, { rotation: parseFloat(match[1]) || 0 })
+        if (match) commitUpdates(shape.id, { rotation: parseFloat(match[1]) || 0 })
       } else if (shapeDragState.handle === 'line-start' || shapeDragState.handle === 'line-end') {
         const sw = slideEl.offsetWidth, sh = slideEl.offsetHeight
         const match = shapeEl.style.transform.match(/rotate\(([-\d.]+)deg\)/)
@@ -301,7 +321,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
         const rad = rot * Math.PI / 180
         const exPx = saveL + saveW * Math.cos(rad)
         const eyPx = saveT + saveW * Math.sin(rad)
-        updateShapeRef.current(shape.id, {
+        commitUpdates(shape.id, {
           x: (saveL / sw * 100) + '%',
           y: (saveT / sh * 100) + '%',
           w: (saveW / sw * 100) + '%',
@@ -326,7 +346,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
           updates.ex = (endX / sw * 100) + '%'
           updates.ey = (endY / sh * 100) + '%'
         }
-        updateShapeRef.current(shape.id, updates)
+        commitUpdates(shape.id, updates)
       }
       setShapeDragState(null)
       setTimeout(() => saveRef.current(), 0)
@@ -563,6 +583,9 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
     style.borderColor = shape.stroke && shape.stroke !== 'transparent' ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent'
     style.borderWidth = (shape.strokeWidth || 0) + 'px'
     style.borderRadius = shape.type === 'circle' ? '50%' : '0'
+  } else if (shape.type === 'triangle' || shape.type === 'diamond' || shape.type === 'star' || shape.type === 'pentagon' || shape.type === 'hexagon') {
+    style.background = 'transparent'
+    style.border = 'none'
   } else if (shape.type === 'line' || shape.type === 'arrow') {
     const lw = shape.lineWeight || 3
     const dash = shape.lineDash || 'solid'
@@ -692,6 +715,37 @@ function ShapeEl({ shape, isSelected, onMouseDown, onDoubleClick, onContextMenu,
       onMouseDown={onMouseDown}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}>
+      {(shape.type === 'triangle' || shape.type === 'diamond' || shape.type === 'star' || shape.type === 'pentagon' || shape.type === 'hexagon') && (
+        <>
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polygon points={shape.svgPoints || '50,0 0,100 100,100'}
+              fill={shape.fill && shape.fill !== 'transparent' ? hexToRgba(shape.fill, shape.fillOpacity) : 'transparent'}
+              stroke={shape.stroke && shape.stroke !== 'transparent' ? hexToRgba(shape.stroke, shape.strokeOpacity) : 'transparent'}
+              strokeWidth={shape.strokeWidth || 2}
+              strokeLinejoin="round"
+              pointerEvents="none" />
+          </svg>
+          <div ref={labelRef} className="shape-label"
+            style={{
+              color: shape.color || '#ffffff',
+              fontSize: (shape.fontSize || 14) + 'px',
+              fontFamily: shape.fontFamily || 'Poppins',
+              textAlign: shape.textAlign || 'left',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'stretch',
+              overflow: 'hidden',
+              visibility: shape.text ? 'visible' : 'hidden',
+              pointerEvents: 'none'
+            }}>
+            <div style={{ textAlign: shape.textAlign || 'left', whiteSpace: 'pre-wrap', width: '100%', wordBreak: 'break-word' }}>
+              {shape.text || ''}
+            </div>
+          </div>
+        </>
+      )}
       {shape.type === 'text' && (
         <div ref={labelRef} className="shape-label"
           style={{

@@ -127,6 +127,7 @@ function SlideshowEditor() {
         if (lineDrawState) setLineDrawState(null)
         setShapePopupOpen(false)
         setShortcutsVisible(false)
+        setShowShapeLibrary(false)
       }
       if (e.key === '?' && !settingsVisible && !isInPresenterNotes && !isContentEditable) { e.preventDefault(); setShortcutsVisible(v => !v) }
       if ((e.key === 'l' || e.key === 'L') && fullscreen) { e.preventDefault(); if (!laserMode && drawMode) setDrawMode(false); setLaserMode(!laserMode) }
@@ -156,10 +157,13 @@ function SlideshowEditor() {
       if (shapePopupOpen && !e.target.closest('.shape-popup') && !e.target.closest('#shapeFloatBtn')) {
         setShapePopupOpen(false)
       }
+      if (showShapeLibrary && !e.target.closest('.right-sidebar') && !e.target.closest('.right-sidebar-toggle')) {
+        setShowShapeLibrary(false)
+      }
     }
     document.addEventListener('mousedown', onMouseDown)
     return () => document.removeEventListener('mousedown', onMouseDown)
-  }, [ctxMenuPos, ctxShapeMenuPos, shapePopupOpen])
+  }, [ctxMenuPos, ctxShapeMenuPos, shapePopupOpen, showShapeLibrary])
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -655,10 +659,10 @@ function SlideshowEditor() {
               <div className="skeleton" style={{ width: 24, height: 14, borderRadius: '4px', marginLeft: 6 }}></div>
             </div>
           </div>
-          <div class="sidebar-thumbnails" id="thumbnails">
-            <div class="skeleton skeleton-thumb" id="skeletonThumb1"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
-            <div class="skeleton skeleton-thumb" id="skeletonThumb2"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line short"></div></div>
-            <div class="skeleton skeleton-thumb" id="skeletonThumb3"><div class="skeleton skeleton-thumb-box"></div><div class="skeleton skeleton-thumb-line"></div></div>
+          <div className="sidebar-thumbnails" id="thumbnails">
+            <div className="skeleton skeleton-thumb" id="skeletonThumb1"><div className="skeleton skeleton-thumb-box"></div><div className="skeleton skeleton-thumb-line"></div></div>
+            <div className="skeleton skeleton-thumb" id="skeletonThumb2"><div className="skeleton skeleton-thumb-box"></div><div className="skeleton skeleton-thumb-line short"></div></div>
+            <div className="skeleton skeleton-thumb" id="skeletonThumb3"><div className="skeleton skeleton-thumb-box"></div><div className="skeleton skeleton-thumb-line"></div></div>
           </div>
           {/* <div className="sidebar-thumbnails"> */}
             {/* {[1,2,3,4,5].map(i => (
@@ -840,10 +844,16 @@ function SlideshowEditor() {
               {[
                 { type: 'rect', label: 'Rect', svg: '<rect x="2" y="2" width="20" height="20" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
                 { type: 'circle', label: 'Circle', svg: '<circle cx="12" cy="12" r="9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'triangle', label: 'Triangle', svg: '<polygon points="12,2 2,21 22,21" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'diamond', label: 'Diamond', svg: '<polygon points="12,2 22,12 12,22 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'star', label: 'Star', svg: '<polygon points="12,2 14.5,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9.5,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'pentagon', label: 'Pentagon', svg: '<polygon points="12,2 22,9 18,21 6,21 2,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'hexagon', label: 'Hexagon', svg: '<polygon points="7,3 17,3 22,12 17,21 7,21 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
                 { type: 'line', label: 'Line', svg: '<line x1="3" y1="21" x2="21" y2="3" stroke="#818cf8" stroke-width="2"/>' },
                 { type: 'arrow', label: 'Arrow', svg: '<line x1="3" y1="12" x2="19" y2="12" stroke="#818cf8" stroke-width="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="#818cf8" stroke-width="2"/>' },
                 { type: 'text', label: 'Text', svg: '<rect x="3" y="6" width="18" height="12" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" fill="#fff" font-size="8" font-family="Poppins">T</text>' },
                 { type: 'image', label: 'Image', svg: '<rect x="3" y="3" width="18" height="18" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="#818cf8"/><polyline points="21 15 16 10 5 21" fill="none" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'table', label: 'Table', svg: '<rect x="3" y="3" width="18" height="18" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="#818cf8" stroke-width="1"/><line x1="3" y1="15" x2="21" y2="15" stroke="#818cf8" stroke-width="1"/><line x1="9" y1="3" x2="9" y2="21" stroke="#818cf8" stroke-width="1"/><line x1="15" y1="3" x2="15" y2="21" stroke="#818cf8" stroke-width="1"/>' },
               ].map(p => (
                 <button key={p.type} className="rhs-preset-item" title={'Add ' + p.label}
                   onClick={() => handleAddShape(p.type)}>
@@ -867,6 +877,11 @@ function SlideshowEditor() {
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#a0a0b8" strokeWidth="1.5">
                       {shape.type === 'rect' && <rect x="3" y="3" width="18" height="18" rx="2" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
                       {shape.type === 'circle' && <circle cx="12" cy="12" r="9" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'triangle' && <polygon points="12,2 2,21 22,21" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'diamond' && <polygon points="12,2 22,12 12,22 2,12" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'star' && <polygon points="12,2 14.5,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9.5,9" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'pentagon' && <polygon points="12,2 22,9 18,21 6,21 2,9" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
+                      {shape.type === 'hexagon' && <polygon points="7,3 17,3 22,12 17,21 7,21 2,12" fill={shape.fill || 'none'} opacity="0.3" stroke="currentColor"/>}
                       {shape.type === 'line' && <line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" strokeWidth="2"/>}
                       {shape.type === 'arrow' && <><line x1="3" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="currentColor" strokeWidth="2"/></>}
                       {shape.type === 'text' && <><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></>}
