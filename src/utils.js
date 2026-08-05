@@ -1,16 +1,18 @@
+import { t, n } from './i18n'
+
 export function timeAgo(iso) {
   if (!iso) return ''
   const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'Just now'
-  if (mins < 60) return mins + 'm ago'
+  if (mins < 1) return t('time.justNow')
+  if (mins < 60) return t('time.minsAgo', { n: n(mins) })
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return hrs + 'h ago'
+  if (hrs < 24) return t('time.hrsAgo', { n: n(hrs) })
   const days = Math.floor(hrs / 24)
-  if (days < 30) return days + 'd ago'
+  if (days < 30) return t('time.daysAgo', { n: n(days) })
   const months = Math.floor(days / 30)
-  if (months < 12) return months + 'mo ago'
-  return Math.floor(months / 12) + 'y ago'
+  if (months < 12) return t('time.monthsAgo', { n: n(months) })
+  return t('time.yearsAgo', { n: n(Math.floor(months / 12)) })
 }
 
 export function hexToRgba(hex, opacity) {
@@ -28,7 +30,7 @@ export function getDefaultShape(type) {
     case 'circle': return { ...base, type: 'circle', fill: '#6366f1', fillOpacity: 0.3 }
     case 'line': return { ...base, type: 'line', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' }
     case 'arrow': return { ...base, type: 'arrow', w: '30%', h: '0.3%', fill: 'none', stroke: '#ffffff', strokeWidth: 3, lineWeight: 3, lineDash: 'solid' }
-    case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: 'Text', fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0, color: '#000000' }
+    case 'text': return { ...base, type: 'text', w: '20%', h: '8%', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0, text: t('shapeTypes.text'), fontSize: 28, fontWeight: '400', fontStyle: 'normal', textDecoration: 'none', textAlign: 'center', direction: 'ltr', bgColor: 'transparent', bgOpacity: 0, color: '#000000' }
     case 'image': return { ...base, type: 'image', w: '25%', h: '25%', src: '', fill: 'transparent', stroke: 'transparent', strokeWidth: 0, fillOpacity: 0, strokeOpacity: 0 }
     case 'table': return { ...base, type: 'table', w: '40%', h: '30%', fill: '#1e293b', fillOpacity: 0.6, stroke: '#475569', strokeWidth: 1, rows: 3, cols: 3, cellData: [['','',''],['','',''],['','','']], fontSize: 14, color: '#e2e8f0', fontFamily: 'Poppins' }
     case 'triangle': return { ...base, type: 'triangle', fill: '#6366f1', fillOpacity: 0.3, svgPoints: '50,0 0,100 100,100' }

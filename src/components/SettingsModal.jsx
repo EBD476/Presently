@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
 import { getDefaultApiBase } from '../api'
+import { useI18n } from '../i18n'
 
 export default function SettingsModal({ visible, onClose }) {
   const { apiBaseUrl, setApiBaseUrl, slides, slideBgColors, deckName, save } = useSlideshow()
+  const { t, lang, setLang } = useI18n()
   const [url, setUrl] = useState(apiBaseUrl || getDefaultApiBase())
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function SettingsModal({ visible, onClose }) {
         el.classList.remove('active')
       }
       pdf.save(deckName + '.pdf')
-    } catch (err) { alert('PDF export failed: ' + err.message) }
+    } catch (err) { alert(t('settings.pdfFailed', { msg: err.message })) }
   }
 
   async function exportPPTX() {
@@ -70,7 +72,7 @@ export default function SettingsModal({ visible, onClose }) {
         el.classList.remove('active')
       }
       pptx.writeFile({ fileName: deckName + '.pptx' })
-    } catch (err) { alert('PPTX export failed: ' + err.message) }
+    } catch (err) { alert(t('settings.pptxFailed', { msg: err.message })) }
   }
 
   function loadScript(src) {
@@ -98,17 +100,26 @@ export default function SettingsModal({ visible, onClose }) {
     <div className="modal-overlay open" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal">
         <div className="modal-header">
-          <h2>Slide Images</h2>
+          <h2>{t('settings.slideImages')}</h2>
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
         <div className="modal-body" id="modalBody">
           <div className="slide-setting" style={{ borderBottom: '2px solid rgba(99, 102, 241, 0.3)', marginBottom: '0.5rem' }}>
-            <label style={{ color: '#a5b4fc' }}>API Server URL</label>
+            <label style={{ color: '#a5b4fc' }}>{t('settings.apiUrl')}</label>
             <input type="text" placeholder="http://localhost:3002" value={url}
               onChange={e => setUrl(e.target.value)} />
           </div>
+          <div className="slide-setting">
+            <label>{t('settings.language')}</label>
+            <div className="lang-picker">
+              <button className={'lang-pick' + (lang === 'fa' ? ' active' : '')}
+                onClick={() => setLang('fa')}>{t('lang.fa')}</button>
+              <button className={'lang-pick' + (lang === 'en' ? ' active' : '')}
+                onClick={() => setLang('en')}>{t('lang.en')}</button>
+            </div>
+          </div>
           <div className="export-section">
-            <label>Export Deck</label>
+            <label>{t('settings.exportDeck')}</label>
             <div className="export-btns">
               <button className="export-btn" onClick={exportPDF}><span className="icon">&#128196;</span> PDF</button>
               <button className="export-btn" onClick={exportPPTX}><span className="icon">&#128202;</span> PPTX</button>
@@ -116,8 +127,8 @@ export default function SettingsModal({ visible, onClose }) {
           </div>
         </div>
         <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>Cancel</button>
-          <button className="btn-save" onClick={handleSave}>Save</button>
+          <button className="btn-cancel" onClick={onClose}>{t('common.cancel')}</button>
+          <button className="btn-save" onClick={handleSave}>{t('common.save')}</button>
         </div>
       </div>
     </div>

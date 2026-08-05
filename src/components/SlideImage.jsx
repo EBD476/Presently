@@ -1,10 +1,12 @@
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
 import { resolveUrl, uploadImage } from '../api'
+import { useI18n } from '../i18n'
 
 export default function SlideImage({ slideIndex }) {
   const { slideUrls, setSlideUrls, resizeData, setResizeData,
     slideMode, setSlideMode, slideBgColors, setSlideBgColors, save, current } = useSlideshow()
+  const { t } = useI18n()
   const wrapRef = useRef(null)
   const [activeResize, setActiveResize] = useState(null)
   const [dragCandidate, setDragCandidate] = useState(null)
@@ -181,11 +183,11 @@ export default function SlideImage({ slideIndex }) {
       <div className="img-props" data-slide={slideIndex}>
         {['cover', 'contain', 'fill', 'original'].map(m => (
           <button key={m} data-mode={m} className={mode === m ? 'active' : ''}
-            onClick={() => handleModeChange(m)}>{m.charAt(0).toUpperCase() + m.slice(1)}</button>
+            onClick={() => handleModeChange(m)}>{t('slideImage.' + m)}</button>
         ))}
         <div className="bg-color-wrap">
           <input type="color" className="bg-color-input" value={bgColor || '#1a1a24'}
-            title="Background color"
+            title={t('slideImage.background')}
             onChange={e => handleBgChange(e.target.value)} />
         </div>
       </div>

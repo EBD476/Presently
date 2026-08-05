@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { useI18n } from '../i18n'
 
 export default function PromptDialog({ show, message, placeholder, initial, onCancel, onConfirm }) {
+  const { t } = useI18n()
   const [val, setVal] = useState(initial || '')
   const inputRef = useRef(null)
 
@@ -26,9 +28,9 @@ export default function PromptDialog({ show, message, placeholder, initial, onCa
           placeholder={placeholder || ''} value={val}
           onChange={e => setVal(e.target.value)} onKeyDown={handleKeyDown} />
         <div className="confirm-actions">
-          <button className="btn-cancel" onClick={onCancel}>Cancel</button>
+          <button className="btn-cancel" onClick={onCancel}>{t('common.cancel')}</button>
           <button className="btn-save" onClick={() => val.trim() && onConfirm(val.trim())}
-            style={{ opacity: val.trim() ? 1 : 0.5, pointerEvents: val.trim() ? 'auto' : 'none' }}>Save</button>
+            style={{ opacity: val.trim() ? 1 : 0.5, pointerEvents: val.trim() ? 'auto' : 'none' }}>{t('common.save')}</button>
         </div>
       </div>
     </div>

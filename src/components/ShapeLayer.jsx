@@ -3,6 +3,7 @@ import { useSlideshow } from '../context/SlideshowContext'
 import { useToast } from './Toast'
 import { hexToRgba, getDefaultShape } from '../utils'
 import { resolveUrl, uploadImage } from '../api'
+import { useI18n, t } from '../i18n'
 
 let shapeClipboard = null
 
@@ -10,6 +11,7 @@ const GRID = 10
 
 export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect, lineDrawState, setLineDrawState, snapToGrid }) {
   const showToast = useToast()
+  const { t } = useI18n()
   const { slideShapes, setSlideShapes, save, current } = useSlideshow()
   const [shapeDragState, setShapeDragState] = useState(null)
   const slideRef = useRef(null)
@@ -136,7 +138,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
     if (shape.type === 'text') {
       const lbl = e.currentTarget.querySelector('.shape-label')
       if (!lbl) return
-      lbl.innerText = shape.text || 'Text'
+      lbl.innerText = shape.text || t('shapeTypes.text')
       lbl.contentEditable = true
       lbl.focus()
       const onBlur = () => {
@@ -175,7 +177,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
           const url = await uploadImage(file)
           updateShape(shape.id, { src: url })
           setTimeout(() => saveRef.current(), 0)
-        } catch (_) { showToast('Failed to upload image') }
+        } catch (_) { showToast(t('slideImage.uploadFailed')) }
       }
       document.body.appendChild(input)
       input.click()
@@ -456,12 +458,12 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
         switch (action) {
           case 'copy':
             shapeClipboard = JSON.parse(JSON.stringify(shape))
-            showToast('Shape copied', 'success')
+            showToast(t('slideshow.shapeCopied'), 'success')
             break
           case 'cut':
             shapeClipboard = JSON.parse(JSON.stringify(shape))
             deleteShape(shapeId)
-            showToast('Shape cut', 'success')
+            showToast(t('slideshow.shapeCut'), 'success')
             break
           case 'duplicate': {
             const newId = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
@@ -499,7 +501,7 @@ export default function ShapeLayer({ slideIndex, selectedShapeId, onShapeSelect,
             })
             onShapeSelect(newId)
             setTimeout(() => saveRef.current(), 0)
-            showToast('Shape pasted', 'success')
+            showToast(t('slideshow.shapePasted'), 'success')
             break
           }
         }
@@ -551,7 +553,7 @@ function escapeHtml(s) {
 
 function renderListContent(shape) {
   const text = shape.text
-  if (!text) return escapeHtml('Text')
+  if (!text) return escapeHtml(t('shapeTypes.text'))
   if (shape.listType === 'bullet') {
     const align = shape.textAlign || 'center'
     const lines = text.split('\n')

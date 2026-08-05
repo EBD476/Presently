@@ -83,6 +83,23 @@
       line-height: 1;
     }
     .create-header-btn:hover { opacity: 0.85; }
+    .deck-lang-switch {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      line-height: 1;
+    }
+    .deck-lang-switch:hover {
+      background: rgba(255,255,255,0.08);
+      color: #a0a0b8;
+      border-color: rgba(255,255,255,0.15);
+    }
     .view-toggle .icon {
       font-size: 1rem;
     }
@@ -668,4 +685,19 @@
     @keyframes toastShrink {
       from { transform: scaleX(1); }
       to { transform: scaleX(0); }
+    }
+
+    [dir='rtl'] .deck-page,
+    [dir='rtl'] .deck-page input,
+    [dir='rtl'] .deck-page select,
+    [dir='rtl'] .deck-page button {
+      font-family: 'Vazirmatn', Tahoma, 'sans-serif';
+    }
+
+    [dir='rtl'] .search-bar .search-icon {
+      left: auto;
+      right: 0.7rem;
+    }
+    [dir='rtl'] .search-bar input {
+      padding: 0.6rem 2.2rem 0.6rem 1rem;
     }

@@ -11,12 +11,14 @@ import Navigation from '../components/Navigation'
 import SettingsModal from '../components/SettingsModal'
 import PromptDialog from '../components/PromptDialog'
 import { getDefaultShape } from '../utils'
+import { useI18n } from '../i18n'
 import '../styles/slideshow.css'
 
 
 function SlideshowEditor() {
   const navigate = useNavigate()
   const showToast = useToast()
+  const { t, n } = useI18n()
   const [searchParams] = useSearchParams()
   const deckParam = searchParams.get('deck')
 
@@ -105,7 +107,7 @@ function SlideshowEditor() {
         if (!selectedShapeId) return
         const shapes = slideShapes[current] || []
         const shape = shapes.find(s => s.id === selectedShapeId)
-        if (shape) { shapeClipboardRef.current = JSON.parse(JSON.stringify(shape)); showToast('Shape copied', 'success') }
+        if (shape) { shapeClipboardRef.current = JSON.parse(JSON.stringify(shape)); showToast(t('slideshow.shapeCopied'), 'success') }
         e.preventDefault()
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
@@ -118,7 +120,7 @@ function SlideshowEditor() {
         setSlideShapes(prev => { const s = { ...prev }; s[current] = [...(s[current] || []), ps]; return s })
         setSelectedShapeId(newId)
         setTimeout(() => saveRef.current(), 0)
-        showToast('Shape pasted', 'success')
+        showToast(t('slideshow.shapePasted'), 'success')
         e.preventDefault()
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); duplicateSlide(current) }
@@ -202,7 +204,7 @@ function SlideshowEditor() {
         setSlideUrls(prev => ({ ...prev, [current]: serverUrl }))
         setResizeData(prev => { const n = { ...prev }; delete n[current]; return n })
         setTimeout(() => saveRef.current(), 0)
-      } catch (_) { showToast('Failed to paste image') }
+      } catch (_) { showToast(t('slideshow.failedPasteImage')) }
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
@@ -577,7 +579,7 @@ function SlideshowEditor() {
     templates[name] = data
     setSlideTemplates(templates)
     try { await saveTemplateToDb(name, data) } catch {}
-    showToast('Template saved', 'success')
+    showToast(t('slideshow.templateSaved'), 'success')
   }, [slideShapes, slideBgColors, slideUrls, slideMode, resizeData, slideTemplates, setSlideTemplates, showToast])
 
   const applyTemplate = useCallback((name, slideIdx) => {
@@ -598,7 +600,7 @@ function SlideshowEditor() {
       if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [slideIdx]: tmpl.resizeData }))
     }
     setTimeout(() => saveRef.current(), 0)
-    showToast('Template applied', 'success')
+    showToast(t('slideshow.templateApplied'), 'success')
   }, [slideTemplates, setSlideShapes, setSlideBgColors, setSlideUrls, setSlideMode, setResizeData, save, showToast])
 
   const deleteTemplate = useCallback(async (name) => {
@@ -615,7 +617,7 @@ function SlideshowEditor() {
     existing[name] = data
     setShapeLibrary(existing)
     try { await apiSaveShape(name, data) } catch {}
-    showToast('Shape saved to library', 'success')
+    showToast(t('slideshow.shapeSavedLibrary'), 'success')
   }, [ctxShapeData, shapeLibrary, setShapeLibrary, showToast])
 
   const insertFromLibrary = useCallback((name) => {
@@ -630,7 +632,7 @@ function SlideshowEditor() {
     setSelectedShapeId(id)
     setTimeout(() => saveRef.current(), 0)
     setShowShapeLibrary(false)
-    showToast('Shape inserted', 'success')
+    showToast(t('slideshow.shapeInserted'), 'success')
   }, [shapeLibrary, current, setSlideShapes, save, showToast])
 
   const deleteFromLibrary = useCallback(async (name) => {
@@ -692,7 +694,7 @@ function SlideshowEditor() {
     <>
      <div className={'slideshow-page' + (fullscreen ? ' fullscreen' : '')}>
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(c => !c)} />
-      <button className="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"
+      <button className="sidebar-toggle" id="sidebarToggle" aria-label={t('slideshow.sidebar')}
         onClick={() => setSidebarCollapsed(c => !c)}>&#9776;</button>
 
       <div className="main-area">
@@ -717,14 +719,14 @@ function SlideshowEditor() {
                       setSlideUrls(prev => ({ ...prev, [i]: serverUrl }))
                       setResizeData(prev => { const n = { ...prev }; delete n[i]; return n })
                       setTimeout(() => saveRef.current(), 0)
-                    } catch (_) { showToast('Failed to upload dropped image') }
+                    } catch (_) { showToast(t('slideshow.failedUploadDrop')) }
                   }
                 }}>
                 <SlideImage slideIndex={i} />
                 <div className="fallback-msg" style={{ display: slideUrls[i] ? 'none' : '' }}>
                   <div className="fallback-box">
-                    <div className="fb-num">{slideNames[i] || 'Slide Number ' + (i + 1)}</div>
-                    <div className="fb-label">Import image or paste from clipboard</div>
+                    <div className="fb-num">{slideNames[i] || t('slideshow.slideNumber', { n: n(i + 1) })}</div>
+                    <div className="fb-label">{t('slideshow.importImage')}</div>
                   </div>
                 </div>
                 <div className={'slide-url-bar' + (showUrlBarFor === i ? ' show' : '')}>
@@ -752,9 +754,9 @@ function SlideshowEditor() {
                       setTimeout(() => saveRef.current(), 0)
                     }
                     setShowUrlBarFor(null)
-                  }}>Apply</button>
+                  }}>{t('common.apply')}</button>
                 </div>
-                <span className="slide-label">{slideNames[i] || 'Slide ' + (i + 1)}</span>
+                <span className="slide-label">{slideNames[i] || t('slideshow.slide', { n: n(i + 1) })}</span>
                 <span className="slide-number">{i + 1} / {slides.length}</span>
                 <ShapeLayer slideIndex={i} selectedShapeId={selectedShapeId} onShapeSelect={setSelectedShapeId}
                   lineDrawState={lineDrawState} setLineDrawState={setLineDrawState}
@@ -772,7 +774,7 @@ function SlideshowEditor() {
 
           {drawMode && (
             <div className="draw-toolbar show">
-              <span className="draw-label">Draw</span>
+              <span className="draw-label">{t('slideshow.draw')}</span>
               <input type="color" id="drawColor" value={drawColor}
                 onChange={e => { const v = e.target.value; setDrawColor(v); drawColorRef.current = v }} />
               <input type="range" id="drawSize" min="1" max="20" value={drawSize}
@@ -786,11 +788,11 @@ function SlideshowEditor() {
                   }
                   return d
                 })
-              }}>Undo</button>
+              }}>{t('common.undo')}</button>
               <button onClick={() => {
                 setDrawData(prev => { const d = { ...prev }; delete d[current]; return d })
-              }}>Erase</button>
-              <button onClick={() => setDrawMode(false)}>Done</button>
+              }}>{t('common.erase')}</button>
+              <button onClick={() => setDrawMode(false)}>{t('common.done')}</button>
             </div>
           )}
 
@@ -799,7 +801,7 @@ function SlideshowEditor() {
               onClose={() => setSelectedShapeId(null)} />
           )}
 
-          <button id="shapeFloatBtn" title="Add shape" onClick={() => setShapePopupOpen(p => !p)}>+</button>
+          <button id="shapeFloatBtn" title={t('slideshow.addShape')} onClick={() => setShapePopupOpen(p => !p)}>+</button>
           {shapePopupOpen && (
             <div className="shape-popup show">
               {['rect', 'circle', 'line', 'arrow', 'text', 'image', 'table'].map(type => (
@@ -813,13 +815,13 @@ function SlideshowEditor() {
                     {type === 'image' && <><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="currentColor" strokeWidth="2"/><polyline points="21 15 16 10 5 21" fill="none" stroke="currentColor" strokeWidth="2"/></>}
                     {type === 'table' && <><path d="M3 3h18v18H3z" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="1.5"/><line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" strokeWidth="1.5"/><line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" strokeWidth="1.5"/><line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" strokeWidth="1.5"/></>}
                   </svg>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                  {t('shapeTypes.' + type)}
                 </button>
               ))}
             </div>
           )}
 
-          <button className="library-btn" title="Shape Library"
+          <button className="library-btn" title={t('slideshow.shapeLibrary')}
             onClick={() => setShowShapeLibrary(v => !v)}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round">
@@ -834,28 +836,28 @@ function SlideshowEditor() {
 
       <div className={'right-sidebar' + (showShapeLibrary ? ' open' : '')}>
         <div className="right-sidebar-header">
-          <span>Shape Library</span>
+          <span>{t('slideshow.shapeLibrary')}</span>
           <button className="right-sidebar-close" onClick={() => setShowShapeLibrary(false)}>&times;</button>
         </div>
         <div className="right-sidebar-body">
           <div className="right-sidebar-section">
-            <div className="right-sidebar-section-title">Presets</div>
+            <div className="right-sidebar-section-title">{t('slideshow.presets')}</div>
             <div className="rhs-preset-grid">
               {[
-                { type: 'rect', label: 'Rect', svg: '<rect x="2" y="2" width="20" height="20" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'circle', label: 'Circle', svg: '<circle cx="12" cy="12" r="9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'triangle', label: 'Triangle', svg: '<polygon points="12,2 2,21 22,21" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'diamond', label: 'Diamond', svg: '<polygon points="12,2 22,12 12,22 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'star', label: 'Star', svg: '<polygon points="12,2 14.5,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9.5,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'pentagon', label: 'Pentagon', svg: '<polygon points="12,2 22,9 18,21 6,21 2,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'hexagon', label: 'Hexagon', svg: '<polygon points="7,3 17,3 22,12 17,21 7,21 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'line', label: 'Line', svg: '<line x1="3" y1="21" x2="21" y2="3" stroke="#818cf8" stroke-width="2"/>' },
-                { type: 'arrow', label: 'Arrow', svg: '<line x1="3" y1="12" x2="19" y2="12" stroke="#818cf8" stroke-width="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="#818cf8" stroke-width="2"/>' },
-                { type: 'text', label: 'Text', svg: '<rect x="3" y="6" width="18" height="12" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" fill="#fff" font-size="8" font-family="Poppins">T</text>' },
-                { type: 'image', label: 'Image', svg: '<rect x="3" y="3" width="18" height="18" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="#818cf8"/><polyline points="21 15 16 10 5 21" fill="none" stroke="#818cf8" stroke-width="1.5"/>' },
-                { type: 'table', label: 'Table', svg: '<rect x="3" y="3" width="18" height="18" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="#818cf8" stroke-width="1"/><line x1="3" y1="15" x2="21" y2="15" stroke="#818cf8" stroke-width="1"/><line x1="9" y1="3" x2="9" y2="21" stroke="#818cf8" stroke-width="1"/><line x1="15" y1="3" x2="15" y2="21" stroke="#818cf8" stroke-width="1"/>' },
+                { type: 'rect', label: t('shapeTypes.rect'), svg: '<rect x="2" y="2" width="20" height="20" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'circle', label: t('shapeTypes.circle'), svg: '<circle cx="12" cy="12" r="9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'triangle', label: t('shapeTypes.triangle'), svg: '<polygon points="12,2 2,21 22,21" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'diamond', label: t('shapeTypes.diamond'), svg: '<polygon points="12,2 22,12 12,22 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'star', label: t('shapeTypes.star'), svg: '<polygon points="12,2 14.5,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 9.5,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'pentagon', label: t('shapeTypes.pentagon'), svg: '<polygon points="12,2 22,9 18,21 6,21 2,9" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'hexagon', label: t('shapeTypes.hexagon'), svg: '<polygon points="7,3 17,3 22,12 17,21 7,21 2,12" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'line', label: t('shapeTypes.line'), svg: '<line x1="3" y1="21" x2="21" y2="3" stroke="#818cf8" stroke-width="2"/>' },
+                { type: 'arrow', label: t('shapeTypes.arrow'), svg: '<line x1="3" y1="12" x2="19" y2="12" stroke="#818cf8" stroke-width="2"/><polyline points="14 7 19 12 14 17" fill="none" stroke="#818cf8" stroke-width="2"/>' },
+                { type: 'text', label: t('shapeTypes.text'), svg: '<rect x="3" y="6" width="18" height="12" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" fill="#fff" font-size="8" font-family="Poppins">T</text>' },
+                { type: 'image', label: t('shapeTypes.image'), svg: '<rect x="3" y="3" width="18" height="18" rx="2" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="none" stroke="#818cf8"/><polyline points="21 15 16 10 5 21" fill="none" stroke="#818cf8" stroke-width="1.5"/>' },
+                { type: 'table', label: t('shapeTypes.table'), svg: '<rect x="3" y="3" width="18" height="18" rx="1" fill="#6366f1" opacity="0.3" stroke="#818cf8" stroke-width="1.5"/><line x1="3" y1="9" x2="21" y2="9" stroke="#818cf8" stroke-width="1"/><line x1="3" y1="15" x2="21" y2="15" stroke="#818cf8" stroke-width="1"/><line x1="9" y1="3" x2="9" y2="21" stroke="#818cf8" stroke-width="1"/><line x1="15" y1="3" x2="15" y2="21" stroke="#818cf8" stroke-width="1"/>' },
               ].map(p => (
-                <button key={p.type} className="rhs-preset-item" title={'Add ' + p.label}
+                <button key={p.type} className="rhs-preset-item" title={t('slideshow.addPreset', { name: p.label })}
                   onClick={() => handleAddShape(p.type)}>
                   <svg viewBox="0 0 24 24" width="28" height="28" dangerouslySetInnerHTML={{ __html: p.svg }} />
                   <span>{p.label}</span>
@@ -864,11 +866,11 @@ function SlideshowEditor() {
             </div>
           </div>
           <div className="right-sidebar-section">
-            <div className="right-sidebar-section-title">Saved Shapes</div>
+            <div className="right-sidebar-section-title">{t('slideshow.savedShapes')}</div>
             <div className="rhs-library-list">
               {Object.keys(shapeLibrary).length === 0 ? (
-                <div className="rhs-library-empty">
-                  No saved shapes.<br/>Right-click a shape to save it.
+                <div className="rhs-library-empty" style={{ whiteSpace: 'pre-line' }}>
+                  {t('slideshow.noSavedShapes')}
                 </div>
               ) : Object.entries(shapeLibrary).map(([name, shape]) => (
                 <div key={name} className="rhs-library-item"
@@ -892,7 +894,7 @@ function SlideshowEditor() {
                     <span className="rhs-library-name">{name}</span>
                     <span className="rhs-library-type">{shape.type}</span>
                   </div>
-                  <button className="rhs-library-del" title="Delete"
+                  <button className="rhs-library-del" title={t('common.delete')}
                     onClick={e => { e.stopPropagation(); deleteFromLibrary(name) }}>&times;</button>
                 </div>
               ))}
@@ -901,9 +903,9 @@ function SlideshowEditor() {
         </div>
       </div>
 
-      <button className="right-sidebar-toggle" id="rightSidebarToggle" aria-label="Toggle shape library"
+      <button className="right-sidebar-toggle" id="rightSidebarToggle" aria-label={t('slideshow.shapeLibraryToggle')}
         onClick={() => setShowShapeLibrary(v => !v)}
-        title="Shape Library">
+        title={t('slideshow.shapeLibrary')}>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -912,16 +914,16 @@ function SlideshowEditor() {
       </button>
 
       <PromptDialog show={saveShapeDialogOpen}
-        message="Enter a name for this shape:"
-        placeholder="Shape name"
+        message={t('slideshow.saveShapePrompt')}
+        placeholder={t('slideshow.shapeName')}
         onCancel={() => setSaveShapeDialogOpen(false)}
         onConfirm={(name) => { saveShapeToLibrary(name); setSaveShapeDialogOpen(false) }} />
 
       {presenterMode && (
         <div id="presenterPanel" className="show">
           <div className="presenter-notes-wrap">
-            <label htmlFor="presenterNotes">Speaker Notes</label>
-            <textarea ref={notesRef} id="presenterNotes" placeholder="Notes for this slide..."
+            <label htmlFor="presenterNotes">{t('slideshow.speakerNotes')}</label>
+            <textarea ref={notesRef} id="presenterNotes" placeholder={t('slideshow.notesPlaceholder')}
               defaultValue={slideNotes[current] || ''}
               onChange={(e) => {
                 const val = e.target.value.trim()
@@ -939,34 +941,34 @@ function SlideshowEditor() {
           </div>
           {current + 1 < slides.length && (
             <div className="presenter-next-wrap">
-              <label>Up Next</label>
+              <label>{t('slideshow.upNext')}</label>
               <div id="presenterNextPreview" style={slideUrls[current + 1] ? { backgroundImage: 'url(' + resolveUrl(slideUrls[current + 1]) + ')' } : {}} />
-              <div className="presenter-next-label" id="presenterNextLabel">{slideNames[current + 1] || 'Slide ' + (current + 2)}</div>
+              <div className="presenter-next-label" id="presenterNextLabel">{slideNames[current + 1] || t('slideshow.slide', { n: n(current + 2) })}</div>
             </div>
           )}
         </div>
       )}
 
-      <button className="settings-btn" id="settingsBtn" aria-label="Settings"
+      <button className="settings-btn" id="settingsBtn" aria-label={t('slideshow.settings')}
         onClick={() => setSettingsVisible(true)}>&#9881;</button>
-      <button className="fullscreen-btn" id="fullscreenBtn" aria-label="Toggle fullscreen"
+      <button className="fullscreen-btn" id="fullscreenBtn" aria-label={t('slideshow.fullscreen')}
         onClick={toggleFullscreen}>
         {fullscreen
           ? <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
           : '\u26F6'}
       </button>
       <button className={'fullscreen-btn' + (laserMode ? ' active' : '')} id="laserToggleBtn"
-        aria-label="Toggle laser pointer" style={laserMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
+        aria-label={t('slideshow.laser')} style={laserMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
         onClick={() => { if (!fullscreen) return; if (!laserMode && drawMode) setDrawMode(false); setLaserMode(!laserMode) }}>
         &#9673;
       </button>
       <button className={'fullscreen-btn' + (drawMode ? ' active' : '')} id="drawToggleBtn"
-        aria-label="Toggle drawing" style={drawMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
+        aria-label={t('slideshow.drawing')} style={drawMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
         onClick={() => { if (!drawMode && laserMode) setLaserMode(false); setDrawMode(!drawMode) }}>
         &#9998;
       </button>
       <button className={'fullscreen-btn' + (presenterMode ? ' active' : '')} id="presenterBtn"
-        aria-label="Toggle presenter mode" style={presenterMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
+        aria-label={t('slideshow.presenter')} style={presenterMode ? { background: 'rgba(99,102,241,0.3)', borderColor: '#6366f1' } : {}}
         onClick={() => { if (!fullscreen) return; setPresenterMode(!presenterMode) }}>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
@@ -979,37 +981,37 @@ function SlideshowEditor() {
         <div className="modal-overlay open" onClick={e => { if (e.target === e.currentTarget) setShortcutsVisible(false) }}>
           <div className="modal shortcuts-modal">
             <div className="modal-header">
-              <h2>Keyboard Shortcuts</h2>
+              <h2>{t('slideshow.shortcuts')}</h2>
               <button className="modal-close" onClick={() => setShortcutsVisible(false)}>&times;</button>
             </div>
             <div className="modal-body shortcuts-body">
               <div className="shortcuts-group">
-                <span className="shortcuts-group-label">Navigation</span>
-                <div className="shortcut-row"><kbd>&larr;</kbd><kbd>&rarr;</kbd><span>Previous / Next slide</span></div>
-                <div className="shortcut-row"><kbd>Home</kbd><span>Go to first slide</span></div>
-                <div className="shortcut-row"><kbd>End</kbd><span>Go to last slide</span></div>
+                <span className="shortcuts-group-label">{t('slideshow.shortcutsNav')}</span>
+                <div className="shortcut-row"><kbd>&larr;</kbd><kbd>&rarr;</kbd><span>{t('slideshow.shortcutsPrevNext')}</span></div>
+                <div className="shortcut-row"><kbd>Home</kbd><span>{t('slideshow.shortcutsFirst')}</span></div>
+                <div className="shortcut-row"><kbd>End</kbd><span>{t('slideshow.shortcutsLast')}</span></div>
               </div>
               <div className="shortcuts-group">
-                <span className="shortcuts-group-label">Fullscreen</span>
-                <div className="shortcut-row"><kbd>D</kbd><span>Toggle draw mode</span></div>
-                <div className="shortcut-row"><kbd>L</kbd><span>Toggle laser pointer</span></div>
-                <div className="shortcut-row"><kbd>P</kbd><span>Toggle presenter mode</span></div>
+                <span className="shortcuts-group-label">{t('slideshow.shortcutsFullscreen')}</span>
+                <div className="shortcut-row"><kbd>D</kbd><span>{t('slideshow.shortcutsDraw')}</span></div>
+                <div className="shortcut-row"><kbd>L</kbd><span>{t('slideshow.shortcutsLaser')}</span></div>
+                <div className="shortcut-row"><kbd>P</kbd><span>{t('slideshow.shortcutsPresenter')}</span></div>
               </div>
               <div className="shortcuts-group">
-                <span className="shortcuts-group-label">Shapes</span>
-                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>C</kbd><span>Copy selected shape</span></div>
-                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>V</kbd><span>Paste shape</span></div>
-                <div className="shortcut-row"><kbd>Del</kbd><span>Delete selected shape</span></div>
+                <span className="shortcuts-group-label">{t('slideshow.shortcutsShapes')}</span>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>C</kbd><span>{t('slideshow.shortcutsCopyShape')}</span></div>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>V</kbd><span>{t('slideshow.shortcutsPasteShape')}</span></div>
+                <div className="shortcut-row"><kbd>Del</kbd><span>{t('slideshow.shortcutsDelShape')}</span></div>
               </div>
               <div className="shortcuts-group">
-                <span className="shortcuts-group-label">Slides</span>
-                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>D</kbd><span>Duplicate current slide</span></div>
+                <span className="shortcuts-group-label">{t('slideshow.shortcutsSlides')}</span>
+                <div className="shortcut-row"><kbd>Ctrl</kbd>+<kbd>D</kbd><span>{t('slideshow.shortcutsDupSlide')}</span></div>
               </div>
               <div className="shortcuts-group">
-                <span className="shortcuts-group-label">General</span>
-                <div className="shortcut-row"><kbd>?</kbd><span>Show this cheat sheet</span></div>
-                <div className="shortcut-row"><kbd>Esc</kbd><span>Close menus / popups</span></div>
-                <div className="shortcut-row"><kbd>F11</kbd><span>Toggle fullscreen</span></div>
+                <span className="shortcuts-group-label">{t('slideshow.shortcutsGeneral')}</span>
+                <div className="shortcut-row"><kbd>?</kbd><span>{t('slideshow.shortcutsCheat')}</span></div>
+                <div className="shortcut-row"><kbd>Esc</kbd><span>{t('slideshow.shortcutsEsc')}</span></div>
+                <div className="shortcut-row"><kbd>F11</kbd><span>{t('slideshow.shortcutsF11')}</span></div>
               </div>
             </div>
           </div>
@@ -1017,8 +1019,8 @@ function SlideshowEditor() {
       )}
 
       <PromptDialog show={templateDialogOpen}
-        message="Enter a name for this slide template:"
-        placeholder="Template name"
+        message={t('slideshow.saveTemplatePrompt')}
+        placeholder={t('slideshow.templateName')}
         onCancel={() => setTemplateDialogOpen(false)}
         onConfirm={(name) => { saveTemplate(name, ctxSlideIdx); setTemplateDialogOpen(false) }} />
 
@@ -1032,36 +1034,36 @@ function SlideshowEditor() {
             setUrlBarValue(slideUrls[idx] || '')
             setTimeout(() => { urlBarRef.current?.focus(); urlBarRef.current?.select() }, 50)
             setCtxMenuPos(null)
-          }}>Set Image URL</div>
+          }}>{t('slideshow.setImageUrl')}</div>
           <div className="ctx-item" onClick={() => {
             const idx = ctxSlideIdx; if (idx < 0 || !slideUrls[idx]) return
             setSlideUrls(prev => { const n = { ...prev }; delete n[idx]; return n })
             setResizeData(prev => { const n = { ...prev }; delete n[idx]; return n })
             setTimeout(() => saveRef.current(), 0)
             setCtxMenuPos(null)
-          }}>Remove Image</div>
-          <div className="ctx-item" onClick={() => { duplicateSlide(ctxSlideIdx); setCtxMenuPos(null) }}>Duplicate Slide</div>
-          <div className="ctx-item" onClick={() => { setTemplateDialogOpen(true); setCtxMenuPos(null) }}>Save as Template</div>
+          }}>{t('slideshow.removeImage')}</div>
+          <div className="ctx-item" onClick={() => { duplicateSlide(ctxSlideIdx); setCtxMenuPos(null) }}>{t('slideshow.duplicateSlide')}</div>
+          <div className="ctx-item" onClick={() => { setTemplateDialogOpen(true); setCtxMenuPos(null) }}>{t('slideshow.saveAsTemplate')}</div>
           <div className="ctx-sub-wrap">
-            <div className="ctx-item ctx-sub">Apply Template ▸</div>
+            <div className="ctx-item ctx-sub">{t('slideshow.applyTemplate')} &#9656;</div>
             <div className="ctx-submenu" id="ctxTemplateSub">
               {Object.keys(slideTemplates).length === 0 ? (
-                <div className="ctx-item" style={{ cursor: 'default', color: '#6b7280' }}>No templates</div>
+                <div className="ctx-item" style={{ cursor: 'default', color: '#6b7280' }}>{t('slideshow.noTemplates')}</div>
               ) : Object.entries(slideTemplates).map(([name]) => (
                 <div key={name} className="ctx-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ flex: 1, cursor: 'pointer' }} onClick={() => {
                     applyTemplate(name, ctxSlideIdx)
                     setCtxMenuPos(null)
                   }}>{name}</span>
-                  <span className="tmpl-all" title="Apply to all slides" onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = slideTemplates[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast('Template applied to all slides', 'success') }}>All</span>
-                  <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast('Template deleted', 'success') }}>&times;</span>
+                  <span className="tmpl-all" title={t('slideshow.applyToAll')} onClick={(e) => { e.stopPropagation(); setCtxMenuPos(null); slides.forEach((_, i) => { const tmpl = slideTemplates[name]; if (!tmpl) return; setSlideShapes(prev => { const s = { ...prev }; s[i] = [...(s[i] || []), ...(tmpl.shapes || []).map(sh => ({ ...sh, id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) }))]; return s }); if (tmpl.bgColor) setSlideBgColors(prev => ({ ...prev, [i]: tmpl.bgColor })); if (tmpl.imageUrl) { setSlideUrls(prev => ({ ...prev, [i]: tmpl.imageUrl })); if (tmpl.imageMode) setSlideMode(prev => ({ ...prev, [i]: tmpl.imageMode })); if (tmpl.resizeData) setResizeData(prev => ({ ...prev, [i]: tmpl.resizeData })) } }); setTimeout(() => saveRef.current(), 0); showToast(t('slideshow.templateAppliedAll'), 'success') }}>{t('slideshow.all')}</span>
+                  <span className="tmpl-del" onClick={(e) => { e.stopPropagation(); deleteTemplate(name); setCtxMenuPos(null); showToast(t('slideshow.templateDeleted'), 'success') }}>&times;</span>
                 </div>
               ))}
             </div>
           </div>
           <div className="ctx-divider"></div>
           <div className="ctx-sub-wrap">
-            <div className="ctx-item ctx-sub">Fit Mode ▸</div>
+            <div className="ctx-item ctx-sub">{t('slideshow.fitMode')} &#9656;</div>
             <div className="ctx-submenu" id="ctxFitSub">
             {['cover', 'contain', 'fill', 'original'].map(m => (
               <div key={m} className="ctx-item" onClick={() => {
@@ -1069,7 +1071,7 @@ function SlideshowEditor() {
                 setSlideMode(prev => ({ ...prev, [idx]: m }))
                 setTimeout(() => saveRef.current(), 0)
                 setCtxMenuPos(null)
-              }}>{m.charAt(0).toUpperCase() + m.slice(1)}</div>
+              }}>{t('slideImage.' + m)}</div>
             ))}
           </div>
           </div>
@@ -1078,7 +1080,7 @@ function SlideshowEditor() {
             const idx = ctxSlideIdx; if (idx < 0 || !slideUrls[idx]) return
             navigator.clipboard.writeText(slideUrls[idx]).catch(() => {})
             setCtxMenuPos(null)
-          }}>Copy Image URL</div>
+          }}>{t('slideshow.copyImageUrl')}</div>
           <div className="ctx-item" onClick={() => {
             navigator.clipboard.read().then(items => {
               for (const ci of items) {
@@ -1089,7 +1091,7 @@ function SlideshowEditor() {
                         const url = await uploadImage(blob)
                         setSlideUrls(prev => ({ ...prev, [ctxSlideIdx]: url }))
                         setTimeout(() => saveRef.current(), 0)
-                      } catch (_) { showToast('Failed to paste image') }
+                      } catch (_) { showToast(t('slideshow.failedPasteImage')) }
                     })
                     return
                   }
@@ -1097,7 +1099,7 @@ function SlideshowEditor() {
               }
             }).catch(() => {})
             setCtxMenuPos(null)
-          }}>Paste Image</div>
+          }}>{t('slideshow.pasteImage')}</div>
           <div className="ctx-item" id="slidePasteItem"
             style={{ display: shapeClipboardRef.current ? '' : 'none' }}
             onClick={() => {
@@ -1110,7 +1112,7 @@ function SlideshowEditor() {
               })
               setTimeout(() => saveRef.current(), 0)
               setCtxMenuPos(null)
-            }}>Paste Shape</div>
+            }}>{t('slideshow.pasteShape')}</div>
         </div>
       )}
 
@@ -1119,9 +1121,9 @@ function SlideshowEditor() {
           style={{ left: ctxShapeMenuPos.x + 'px', top: ctxShapeMenuPos.y + 'px' }}
           onClick={e => e.stopPropagation()}>
           <div className="ctx-item" onClick={() => {
-            if (ctxShapeData) { shapeClipboardRef.current = JSON.parse(JSON.stringify(ctxShapeData.shape)); showToast('Shape copied', 'success') }
+            if (ctxShapeData) { shapeClipboardRef.current = JSON.parse(JSON.stringify(ctxShapeData.shape)); showToast(t('slideshow.shapeCopied'), 'success') }
             setCtxShapeMenuPos(null)
-          }}>Copy</div>
+          }}>{t('common.copy')}</div>
           <div className="ctx-item" onClick={() => {
             if (ctxShapeData) {
               shapeClipboardRef.current = JSON.parse(JSON.stringify(ctxShapeData.shape))
@@ -1133,10 +1135,10 @@ function SlideshowEditor() {
               })
               setSelectedShapeId(null)
               setTimeout(() => saveRef.current(), 0)
-              showToast('Shape cut', 'success')
+              showToast(t('slideshow.shapeCut'), 'success')
             }
             setCtxShapeMenuPos(null)
-          }}>Cut</div>
+          }}>{t('common.cut')}</div>
           <div className="ctx-item" id="shapePasteItem"
             style={{ display: shapeClipboardRef.current ? '' : 'none' }}
             onClick={() => {
@@ -1150,7 +1152,7 @@ function SlideshowEditor() {
               })
               setTimeout(() => saveRef.current(), 0)
               setCtxShapeMenuPos(null)
-            }}>Paste</div>
+            }}>{t('common.paste')}</div>
           <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
             if (!ctxShapeData) return
@@ -1163,18 +1165,18 @@ function SlideshowEditor() {
             })
             setTimeout(() => saveRef.current(), 0)
             setCtxShapeMenuPos(null)
-          }}>Duplicate</div>
+          }}>{t('common.duplicate')}</div>
           <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
             setSnapToGrid(v => !v)
             setCtxShapeMenuPos(null)
-          }}>{snapToGrid ? '✓ ' : ''}Snap to Grid</div>
+          }}>{snapToGrid ? '✓ ' : ''}{t('slideshow.snapToGrid')}</div>
           <div className="ctx-divider"></div>
           <div className="ctx-sub-wrap">
-            <div className="ctx-item ctx-sub">Align ▸</div>
+            <div className="ctx-item ctx-sub">{t('slideshow.align')} &#9656;</div>
             <div className="ctx-submenu" id="ctxAlignSub">
-              {[{ d: 'left', l: 'Left' }, { d: 'center', l: 'Center' }, { d: 'right', l: 'Right' },
-                { d: 'top', l: 'Top' }, { d: 'middle', l: 'Middle' }, { d: 'bottom', l: 'Bottom' }].map(({ d, l }) => (
+              {[{ d: 'left', l: t('shapeProps.left') }, { d: 'center', l: t('shapeProps.center') }, { d: 'right', l: t('shapeProps.right') },
+                { d: 'top', l: t('shapeProps.top') }, { d: 'middle', l: t('shapeProps.middle') }, { d: 'bottom', l: t('shapeProps.bottom') }].map(({ d, l }) => (
                 <div key={d} className="ctx-item" onClick={() => {
                   if (ctxShapeData) handleAlignShape(d, ctxShapeData.slideIdx, ctxShapeData.shape)
                   setCtxShapeMenuPos(null)
@@ -1185,15 +1187,15 @@ function SlideshowEditor() {
           <div className="ctx-item" onClick={() => {
             if (ctxShapeData) handleDistribute('h', ctxShapeData.slideIdx)
             setCtxShapeMenuPos(null)
-          }}>Distribute Horizontally</div>
+          }}>{t('slideshow.distributeH')}</div>
           <div className="ctx-item" onClick={() => {
             if (ctxShapeData) handleDistribute('v', ctxShapeData.slideIdx)
             setCtxShapeMenuPos(null)
-          }}>Distribute Vertically</div>
+          }}>{t('slideshow.distributeV')}</div>
           <div className="ctx-item" onClick={() => {
             setSaveShapeDialogOpen(true)
             setCtxShapeMenuPos(null)
-          }}>Save to Library</div>
+          }}>{t('slideshow.saveToLibrary')}</div>
           <div className="ctx-divider"></div>
           <div className="ctx-item" onClick={() => {
             if (!ctxShapeData) return
@@ -1206,7 +1208,7 @@ function SlideshowEditor() {
             setSelectedShapeId(null)
             setTimeout(() => saveRef.current(), 0)
             setCtxShapeMenuPos(null)
-          }}>Delete</div>
+          }}>{t('common.delete')}</div>
         </div>
       )}
 

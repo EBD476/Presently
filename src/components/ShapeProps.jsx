@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
+import { useI18n } from '../i18n'
 
 export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
   const { slideShapes, setSlideShapes, save } = useSlideshow()
+  const { t } = useI18n()
   const [props, setProps] = useState(null)
   const panelRef = useRef(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -61,8 +63,8 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
       onMouseDown={handlePanelMouseDown}>
       {isText && (
         <>
-          <span className="shape-prop-group"><label>Color</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
-          <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={props?.fontSize || 28} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 28 })} /></span>
+          <span className="shape-prop-group"><label>{t('shapeProps.color')}</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
+          <span className="shape-prop-group" id="shapeFontSizeGroup"><label>{t('shapeProps.size')}</label><input type="number" value={props?.fontSize || 28} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 28 })} /></span>
           <span className="shape-prop-group" id="shapeFontGroup">
             <select value={props?.fontFamily || 'Poppins'} style={{ width: 90 }} onChange={e => update({ fontFamily: e.target.value })}>
               <option value="Poppins">Poppins</option><option value="Roboto">Roboto</option><option value="Courier New">Courier New</option>
@@ -76,7 +78,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
             <button className={'shape-format-btn underline' + (props?.textDecoration === 'underline' ? ' active' : '')} onClick={() => update({ textDecoration: props?.textDecoration === 'underline' ? 'none' : 'underline' })}><u>U</u></button>
           </span>
           <span className="shape-prop-group" id="shapeListGroup">
-            <button className={'shape-list-btn' + (props?.listType === 'bullet' ? ' active' : '')} title="Bullet list" onClick={() => {
+            <button className={'shape-list-btn' + (props?.listType === 'bullet' ? ' active' : '')} title={t('shapeProps.bulletList')} onClick={() => {
               if (props?.listType === 'bullet') {
                 const lines = (shape.text || '').split('\n').map(l => l.replace(/^[-*]\s+/, ''))
                 update({ listType: undefined, text: lines.join('\n') })
@@ -85,7 +87,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
                 update({ listType: 'bullet', text: lines.join('\n') })
               }
             }}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg></button>
-            <button className={'shape-list-btn' + (props?.listType === 'numbered' ? ' active' : '')} title="Numbered list" onClick={() => {
+            <button className={'shape-list-btn' + (props?.listType === 'numbered' ? ' active' : '')} title={t('shapeProps.numberedList')} onClick={() => {
               if (props?.listType === 'numbered') {
                 const lines = (shape.text || '').split('\n').map(l => l.replace(/^\d+[.)]\s+/, ''))
                 update({ listType: undefined, text: lines.join('\n') })
@@ -104,24 +106,24 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
             <button className={'shape-dir-btn' + (props?.direction === 'ltr' ? ' active' : '')} data-dir="ltr" onClick={() => update({ direction: 'ltr' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="15 7 20 12 15 17"/><line x1="4" y1="7" x2="10" y2="7"/></svg></button>
             <button className={'shape-dir-btn' + (props?.direction === 'rtl' ? ' active' : '')} data-dir="rtl" onClick={() => update({ direction: 'rtl' })}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><polyline points="9 7 4 12 9 17"/><line x1="14" y1="7" x2="20" y2="7"/></svg></button>
           </span>
-          <span className="shape-prop-group" id="shapeBgGroup"><label>Bg</label><input type="color" value={props?.bgColor && props?.bgColor !== 'transparent' ? props.bgColor : '#000000'} onChange={e => update({ bgColor: e.target.value })} /><input type="range" min="0" max="1" step="0.05" value={props?.bgOpacity || 0} style={{ width: 48 }} onChange={e => update({ bgOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((props?.bgOpacity || 0) * 100)}%</label></span>
+          <span className="shape-prop-group" id="shapeBgGroup"><label>{t('shapeProps.bg')}</label><input type="color" value={props?.bgColor && props?.bgColor !== 'transparent' ? props.bgColor : '#000000'} onChange={e => update({ bgColor: e.target.value })} /><input type="range" min="0" max="1" step="0.05" value={props?.bgOpacity || 0} style={{ width: 48 }} onChange={e => update({ bgOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((props?.bgOpacity || 0) * 100)}%</label></span>
         </>
       )}
       {isImage && (
         <span className="shape-prop-group" id="shapeImageSrcGroup">
-          <label>Src</label><input type="text" value={shape.src || ''} onChange={e => update({ src: e.target.value })} style={{ width: 150 }} />
+          <label>{t('shapeProps.src')}</label><input type="text" value={shape.src || ''} onChange={e => update({ src: e.target.value })} style={{ width: 150 }} />
           <button onClick={() => {
             const input = document.createElement('input')
             input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none'
             input.onchange = () => { /* handle in parent */ }
             document.body.appendChild(input); input.click(); input.remove()
-          }}>Browse</button>
+          }}>{t('shapeProps.browse')}</button>
         </span>
       )}
       {isTable && (
         <>
           <span className="shape-prop-group" id="shapeTableSizeGroup">
-            <label>Rows</label><input type="number" value={shape.rows || 3} min={1} max={20} style={{ width: 36 }}
+            <label>{t('shapeProps.rows')}</label><input type="number" value={shape.rows || 3} min={1} max={20} style={{ width: 36 }}
               onChange={e => {
                 const n = parseInt(e.target.value) || 1
                 const cellData = [...(shape.cellData || [])]
@@ -129,7 +131,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
                 while (cellData.length > n) cellData.pop()
                 update({ rows: n, cellData })
               }} />
-            <label style={{ marginLeft: 6 }}>Cols</label><input type="number" value={shape.cols || 3} min={1} max={20} style={{ width: 36 }}
+            <label style={{ marginLeft: 6 }}>{t('shapeProps.cols')}</label><input type="number" value={shape.cols || 3} min={1} max={20} style={{ width: 36 }}
               onChange={e => {
                 const n = parseInt(e.target.value) || 1
                 const cellData = [...(shape.cellData || [])]
@@ -141,8 +143,8 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
                 update({ cols: n, cellData })
               }} />
           </span>
-          <span className="shape-prop-group"><label>Color</label><input type="color" value={shape.color || '#e2e8f0'} onChange={e => update({ color: e.target.value })} /></span>
-          <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={shape.fontSize || 14} min={6} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
+          <span className="shape-prop-group"><label>{t('shapeProps.color')}</label><input type="color" value={shape.color || '#e2e8f0'} onChange={e => update({ color: e.target.value })} /></span>
+          <span className="shape-prop-group" id="shapeFontSizeGroup"><label>{t('shapeProps.size')}</label><input type="number" value={shape.fontSize || 14} min={6} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
           <span className="shape-prop-group" id="shapeFontGroup">
             <select value={shape.fontFamily || 'Poppins'} style={{ width: 90 }} onChange={e => update({ fontFamily: e.target.value })}>
               <option value="Poppins">Poppins</option><option value="Roboto">Roboto</option><option value="Courier New">Courier New</option>
@@ -154,15 +156,15 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
       )}
       {!isText && !isImage && !isLine && (
         <>
-          <span className="shape-prop-group"><label>Fill</label><input type="color" value={shape.fill && shape.fill !== 'transparent' ? shape.fill : '#6366f1'} onChange={e => update({ fill: e.target.value })} /></span>
+          <span className="shape-prop-group"><label>{t('shapeProps.fill')}</label><input type="color" value={shape.fill && shape.fill !== 'transparent' ? shape.fill : '#6366f1'} onChange={e => update({ fill: e.target.value })} /></span>
           <span className="shape-prop-group" id="shapeFillOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.fillOpacity == null ? 1 : shape.fillOpacity} style={{ width: 48 }} onChange={e => update({ fillOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.fillOpacity == null ? 1 : shape.fillOpacity) * 100)}%</label></span>
-          <span className="shape-prop-group" id="shapeStrokeGroup"><label>Stroke</label><input type="color" value={shape.stroke || '#ffffff'} onChange={e => update({ stroke: e.target.value })} /></span>
+          <span className="shape-prop-group" id="shapeStrokeGroup"><label>{t('shapeProps.stroke')}</label><input type="color" value={shape.stroke || '#ffffff'} onChange={e => update({ stroke: e.target.value })} /></span>
           <span className="shape-prop-group" id="shapeStrokeOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.strokeOpacity == null ? 1 : shape.strokeOpacity} style={{ width: 48 }} onChange={e => update({ strokeOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.strokeOpacity == null ? 1 : shape.strokeOpacity) * 100)}%</label></span>
-          <span className="shape-prop-group" id="shapeStrokeWidthGroup"><label>W</label><input type="number" value={shape.strokeWidth || 2} min={0} max={20} style={{ width: 36 }} onChange={e => update({ strokeWidth: parseFloat(e.target.value) || 0 })} /></span>
+          <span className="shape-prop-group" id="shapeStrokeWidthGroup"><label>{t('shapeProps.w')}</label><input type="number" value={shape.strokeWidth || 2} min={0} max={20} style={{ width: 36 }} onChange={e => update({ strokeWidth: parseFloat(e.target.value) || 0 })} /></span>
           {(shape.type === 'rect' || shape.type === 'circle' || shape.type === 'triangle' || shape.type === 'diamond' || shape.type === 'star' || shape.type === 'pentagon' || shape.type === 'hexagon') && (
             <>
-              <span className="shape-prop-group"><label>Color</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
-              <span className="shape-prop-group" id="shapeFontSizeGroup"><label>Size</label><input type="number" value={props?.fontSize || 14} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
+              <span className="shape-prop-group"><label>{t('shapeProps.color')}</label><input type="color" value={props?.color || '#ffffff'} onChange={e => update({ color: e.target.value })} /></span>
+              <span className="shape-prop-group" id="shapeFontSizeGroup"><label>{t('shapeProps.size')}</label><input type="number" value={props?.fontSize || 14} min={8} max={200} style={{ width: 44 }} onChange={e => update({ fontSize: parseInt(e.target.value) || 14 })} /></span>
               <span className="shape-prop-group" id="shapeFontGroup">
                 <select value={props?.fontFamily || 'Poppins'} style={{ width: 90 }} onChange={e => update({ fontFamily: e.target.value })}>
                   <option value="Poppins">Poppins</option><option value="Roboto">Roboto</option><option value="Courier New">Courier New</option>
@@ -181,18 +183,18 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
       )}
       {isLine && (
         <>
-          <span className="shape-prop-group"><label>Fill</label><input type="color" value={shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none' ? shape.fill : '#ffffff'} onChange={e => update({ fill: e.target.value })} /></span>
+          <span className="shape-prop-group"><label>{t('shapeProps.fill')}</label><input type="color" value={shape.fill && shape.fill !== 'transparent' && shape.fill !== 'none' ? shape.fill : '#ffffff'} onChange={e => update({ fill: e.target.value })} /></span>
           <span className="shape-prop-group" id="shapeFillOpacityGroup"><input type="range" min="0" max="1" step="0.05" value={shape.fillOpacity == null ? 1 : shape.fillOpacity} style={{ width: 48 }} onChange={e => update({ fillOpacity: parseFloat(e.target.value) })} /><label className="opacity-label">{Math.round((shape.fillOpacity == null ? 1 : shape.fillOpacity) * 100)}%</label></span>
-          <span className="shape-prop-group" id="shapeLineWeightGroup"><label>Weight</label><input type="range" min="1" max="20" value={shape.lineWeight || 3} style={{ width: 52 }} onChange={e => update({ lineWeight: parseInt(e.target.value) })} /><input type="number" value={shape.lineWeight || 3} min={1} max={20} style={{ width: 36 }} onChange={e => update({ lineWeight: parseInt(e.target.value) || 3 })} /></span>
+          <span className="shape-prop-group" id="shapeLineWeightGroup"><label>{t('shapeProps.weight')}</label><input type="range" min="1" max="20" value={shape.lineWeight || 3} style={{ width: 52 }} onChange={e => update({ lineWeight: parseInt(e.target.value) })} /><input type="number" value={shape.lineWeight || 3} min={1} max={20} style={{ width: 36 }} onChange={e => update({ lineWeight: parseInt(e.target.value) || 3 })} /></span>
           <span className="shape-prop-group" id="shapeLineDashGroup">
             <select value={shape.lineDash || 'solid'} onChange={e => update({ lineDash: e.target.value })}>
-              <option value="solid">Solid</option><option value="dashed">Dashed</option><option value="dotted">Dotted</option><option value="dashdot">Dash-dot</option>
+              <option value="solid">{t('shapeProps.solid')}</option><option value="dashed">{t('shapeProps.dashed')}</option><option value="dotted">{t('shapeProps.dotted')}</option><option value="dashdot">{t('shapeProps.dashdot')}</option>
             </select>
           </span>
         </>
       )}
-      <span className="shape-prop-group"><label>Rot</label><input type="range" min="-360" max="360" value={shape.rotation || 0} style={{ width: 60 }} onChange={e => update({ rotation: parseFloat(e.target.value) || 0 })} /><input type="number" value={shape.rotation || 0} min={-360} max={360} style={{ width: 44 }} onChange={e => update({ rotation: parseFloat(e.target.value) || 0 })} /></span>
-      <button className="shape-z-btn" title="Bring to front" onClick={() => {
+      <span className="shape-prop-group"><label>{t('shapeProps.rot')}</label><input type="range" min="-360" max="360" value={shape.rotation || 0} style={{ width: 60 }} onChange={e => update({ rotation: parseFloat(e.target.value) || 0 })} /><input type="number" value={shape.rotation || 0} min={-360} max={360} style={{ width: 44 }} onChange={e => update({ rotation: parseFloat(e.target.value) || 0 })} /></span>
+      <button className="shape-z-btn" title={t('shapeProps.bringToFront')} onClick={() => {
         if (slideIndex == null || !selectedShapeId) return
         setSlideShapes(prev => {
           const s = { ...prev }
@@ -203,7 +205,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
         })
         setTimeout(() => save(), 0)
       }}>&#9650;</button>
-      <button className="shape-z-btn" title="Send to back" onClick={() => {
+      <button className="shape-z-btn" title={t('shapeProps.sendToBack')} onClick={() => {
         if (slideIndex == null || !selectedShapeId) return
         setSlideShapes(prev => {
           const s = { ...prev }
@@ -214,7 +216,7 @@ export default function ShapeProps({ selectedShapeId, slideIndex, onClose }) {
         })
         setTimeout(() => save(), 0)
       }}>&#9660;</button>
-      <button className="shape-del-btn" title="Delete shape" onClick={() => {
+      <button className="shape-del-btn" title={t('shapeProps.deleteShape')} onClick={() => {
         if (slideIndex == null || !selectedShapeId) return
         setSlideShapes(prev => {
           const s = { ...prev }

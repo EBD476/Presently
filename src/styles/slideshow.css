@@ -114,12 +114,22 @@
       border-right: 1px solid rgba(255, 255, 255, 0.06);
       z-index: 300;
       position: relative;
-      transition: margin-left 0.3s ease;
+      transition: margin-left 0.3s ease, margin-right 0.3s ease;
     }
 
     .sidebar.collapsed {
       margin-left: -240px;
       overflow: hidden;
+    }
+
+    [dir='rtl'] .sidebar {
+      border-right: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    [dir='rtl'] .sidebar.collapsed {
+      margin-left: 0;
+      margin-right: -240px;
     }
 
     .sidebar-header {
@@ -359,6 +369,7 @@
       width: 100%;
       outline: none;
       font-family: inherit;
+      user-select: text;
     }
 
     .confirm-overlay {
@@ -1048,6 +1059,12 @@
       color: #fff;
     }
 
+    [dir='rtl'] .settings-btn,
+    [dir='rtl'] .fullscreen-btn {
+      right: auto;
+      left: 1.25rem;
+    }
+
     .fallback-msg {
       position: absolute;
       inset: 0;
@@ -1112,9 +1129,30 @@
       color: #fff;
     }
 
+    [dir='rtl'] .sidebar-toggle {
+      left: auto;
+      right: 14rem;
+      padding-left: 0;
+      padding-right: 10px;
+    }
+
+    [dir='rtl'] .slideshow-page,
+    [dir='rtl'] .toast,
+    [dir='rtl'] .slideshow-page input,
+    [dir='rtl'] .slideshow-page select,
+    [dir='rtl'] .slideshow-page textarea,
+    [dir='rtl'] .slideshow-page button {
+      font-family: 'Vazirmatn', Tahoma, 'sans-serif';
+    }
+
     .sidebar.collapsed ~ .sidebar-toggle {
       left: -0.8rem;
       z-index: 400;
+    }
+
+    [dir='rtl'] .sidebar.collapsed ~ .sidebar-toggle {
+      left: auto;
+      right: -0.8rem;
     }
 
     .fullscreen .sidebar-toggle {
@@ -1169,7 +1207,17 @@
       color: #fff;
     }
 
+    [dir='rtl'] .right-sidebar-toggle {
+      right: auto;
+      left: 0;
+      border-left: none;
+      border-right: 1px solid rgba(28, 28, 36, 0.9);
+      border-radius: 0 8px 8px 0;
+    }
+
     .right-sidebar.open ~ .right-sidebar-toggle { right: 320px; }
+
+    [dir='rtl'] .right-sidebar.open ~ .right-sidebar-toggle { right: auto; left: 320px; }
 
     .fullscreen .right-sidebar-toggle { display: none; }
 
@@ -1191,6 +1239,16 @@
     }
 
     .right-sidebar.open { right: 0; }
+
+    [dir='rtl'] .right-sidebar {
+      right: auto;
+      left: -340px;
+      border-left: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 10px 0 40px rgba(0, 0, 0, 0.3);
+    }
+
+    [dir='rtl'] .right-sidebar.open { right: auto; left: 0; }
 
     .right-sidebar-header {
       display: flex;
@@ -1806,7 +1864,7 @@
       padding: 0.5rem;
       resize: vertical;
       /* font-family: inherit; */
-      font-family: 'Vazirmatn', 'Vazir', 'IRANSans', Tahoma, 'sans-serif';     
+      font-family: 'Vazirmatn', Tahoma, 'sans-serif';     
       outline: none;
       line-height: 1.4;
       direction:rtl;
@@ -2125,6 +2183,7 @@
       transform: scale(1.05);
     }
     .fullscreen #shapeFloatBtn { display: none; }
+    [dir='rtl'] #shapeFloatBtn { right: auto; left: 1rem; }
     .shape-popup {
       position: absolute;
       bottom: 3.6rem;
@@ -2172,6 +2231,8 @@
     }
     .fullscreen .shape-popup { display: none !important; }
 
+    [dir='rtl'] .shape-popup { right: auto; left: 0.5rem; }
+
     .library-btn {
       position: absolute;
       bottom: 1rem;
@@ -2194,6 +2255,7 @@
       color: rgb(97, 94, 94);
     }
     .fullscreen .library-btn { display: none; }
+    [dir='rtl'] .library-btn { right: auto; left: 4rem; }
 
 
 
@@ -2561,6 +2623,31 @@
     }
 
     :fullscreen .app-footer { display: none !important; }
+    .lang-picker {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .lang-pick {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .lang-pick:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .lang-pick.active {
+      background: rgba(99,102,241,0.2);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
     .shape-layer.snap-grid {
       background-image:
         linear-gradient(rgba(99,102,241,0.08) 1px, transparent 1px),

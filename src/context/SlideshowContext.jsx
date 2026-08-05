@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react'
 import { fetchDeckData, saveDeckData, uploadImage, resolveUrl, getDefaultApiBase } from '../api'
+import { t } from '../i18n'
 
 const SlideshowContext = createContext(null)
 
@@ -130,7 +131,7 @@ export function SlideshowProvider({ children }) {
     setSlideUrls(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] }; return prev })
     setResizeData(prev => { if (prev[index]) return { ...prev, [idx]: { ...prev[index] } }; return prev })
     setSlideMode(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] }; return prev })
-    setSlideNames(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] + ' (Copy)' }; return prev })
+    setSlideNames(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] + t('slideshow.copySuffix') }; return prev })
     setSlideBgColors(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] }; return prev })
     setSlideNotes(prev => { if (prev[index]) return { ...prev, [idx]: prev[index] }; return prev })
     setSlideShapes(prev => {
@@ -190,7 +191,7 @@ export function SlideshowProvider({ children }) {
     apiBaseUrl, setApiBaseUrl, expandedSlide, setExpandedSlide,
     shapeLibrary, setShapeLibrary, slideTemplates, setSlideTemplates,
     loadDeck, save, goTo, next, prev, addSlide, removeSlide,
-    duplicateSlide, reorderSlides, renameDeck, slidesRef, drawDataRef
+    duplicateSlide, reorderSlides, renameDeck, slidesRef, drawDataRef, saveRef
   }
 
   return (
