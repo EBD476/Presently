@@ -1,12 +1,138 @@
 const express = require('express');
 const path = require('path');
 const cors = require("cors");
+const crypto = require('crypto');
 const db = require('./db');
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
 app.use(express.static(__dirname));
 app.use(cors());
+
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(String(password), salt, 64).toString('hex');
+  return salt + ':' + hash;
+}
+
+function verifyPassword(password, stored) {
+  if (!stored || typeof stored !== 'string') return false;
+  const parts = stored.split(':');
+  if (parts.length !== 2) return false;
+  const [salt, hash] = parts;
+  const candidate = crypto.scryptSync(String(password), salt, 64);
+  const expected = Buffer.from(hash, 'hex');
+  if (candidate.length !== expected.length) return false;
+  return crypto.timingSafeEqual(candidate, expected);
+}
+
+function createSession(userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const created = new Date().toISOString();
+  const expires = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+  db.query('INSERT INTO sessions (token, user_id, created, expires) VALUES (?, ?, ?, ?)', [token, userId, created, expires]);
+  return token;
+}
+
+function getTokenFromReq(req) {
+  const header = req.headers.authorization || '';
+  if (header.startsWith('Bearer ')) return header.slice(7);
+  if (req.query.auth) return req.query.auth;
+  return null;
+}
+
+function getUserFromToken(token) {
+  if (!token) return null;
+  const row = db.get('SELECT * FROM sessions WHERE token = ?', [token]);
+  if (!row) return null;
+  if (new Date(row.expires).getTime() < Date.now()) {
+    db.query('DELETE FROM sessions WHERE token = ?', [token]);
+    return null;
+  }
+  return db.get('SELECT id, username, email, created, lastLogin FROM users WHERE id = ?', [row.user_id]);
+}
+
+function requireAuth(req, res, next) {
+  const user = getUserFromToken(getTokenFromReq(req));
+  if (!user) return res.status(401).json({ error: 'unauthorized' });
+  req.user = user;
+  next();
+}
+
+// Protect all /api routes except auth + media (media validates its own token so <img> works)
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth/') || req.path.startsWith('/image/')) return next();
+  return requireAuth(req, res, next);
+});
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { username, password, email } = req.body;
+    const name = String(username || '').trim();
+    if (name.length < 3 || name.length > 40) {
+      return res.status(400).json({ error: 'username_length' });
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(name)) {
+      return res.status(400).json({ error: 'username_chars' });
+    }
+    if (!password || String(password).length < 6) {
+      return res.status(400).json({ error: 'password_short' });
+    }
+    if (db.get('SELECT id FROM users WHERE username = ?', [name])) {
+      return res.status(409).json({ error: 'username_taken' });
+    }
+    const now = new Date().toISOString();
+    const cleanEmail = String(email || '').trim().slice(0, 200) || null;
+    db.query('INSERT INTO users (username, email, password_hash, created, lastLogin) VALUES (?, ?, ?, ?, ?)',
+      [name, cleanEmail, hashPassword(password), now, now]);
+    const user = db.get('SELECT id, username, email, created, lastLogin FROM users WHERE username = ?', [name]);
+    const token = createSession(user.id);
+    res.json({ token, user });
+  } catch (err) {
+    console.error('POST /api/auth/register:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const name = String(username || '').trim();
+    const user = db.get('SELECT * FROM users WHERE username = ?', [name]);
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ error: 'invalid_credentials' });
+    }
+    const now = new Date().toISOString();
+    db.query('UPDATE users SET lastLogin = ? WHERE id = ?', [now, user.id]);
+    const token = createSession(user.id);
+    res.json({
+      token,
+      user: { id: user.id, username: user.username, email: user.email, created: user.created, lastLogin: now }
+    });
+  } catch (err) {
+    console.error('POST /api/auth/login:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  try {
+    const token = getTokenFromReq(req);
+    if (token) db.query('DELETE FROM sessions WHERE token = ?', [token]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/auth/logout:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const user = getUserFromToken(getTokenFromReq(req));
+  if (!user) return res.status(401).json({ error: 'unauthorized' });
+  res.json({ user });
+});
 
 function convertDataUrls(urls) {
   let maxId = db.get('SELECT COALESCE(MAX(id), 0) as m FROM images');
@@ -245,6 +371,9 @@ app.delete('/api/templates/:name', (req, res) => {
 
 app.get('/api/image/:id', (req, res) => {
   try {
+    if (!getUserFromToken(getTokenFromReq(req))) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
     const img = db.get('SELECT * FROM images WHERE id = ?', [parseInt(req.params.id)]);
     if (!img) {
       return res.status(404).json({ error: 'Image not found' });

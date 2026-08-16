@@ -69,6 +69,24 @@ function createTables() {
       modified TEXT
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      email TEXT,
+      password_hash TEXT NOT NULL,
+      created TEXT,
+      lastLogin TEXT
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      created TEXT,
+      expires TEXT
+    )
+  `);
   save();
 }
 

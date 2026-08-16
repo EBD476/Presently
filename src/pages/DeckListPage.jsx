@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchDecks, toggleStar as apiToggleStar, deleteDeck as apiDeleteDeck, saveDeckData, fetchDeckData } from '../api'
+import { fetchDecks, toggleStar as apiToggleStar, deleteDeck as apiDeleteDeck, saveDeckData, fetchDeckData, resolveUrl } from '../api'
 import { timeAgo } from '../utils'
 import { useToast } from '../components/Toast'
 import ConfirmDialog from '../components/ConfirmDialog'
 import LanguageSwitch from '../components/LanguageSwitch'
+import { useAuth } from '../context/AuthContext'
 import { useI18n } from '../i18n'
 import '../styles/decks.css'
 
@@ -15,6 +16,7 @@ const PAGE_SIZE = 20
 export default function DeckListPage() {
   const navigate = useNavigate()
   const showToast = useToast()
+  const { user, logout } = useAuth()
   const { t, n, isRtl } = useI18n()
   const MODE_LABELS = { grid: t('decklist.mode.grid'), list: t('decklist.mode.list'), compact: t('decklist.mode.compact') }
   const [allDecks, setAllDecks] = useState([])
@@ -71,6 +73,13 @@ export default function DeckListPage() {
 
   function openDeck(name) {
     navigate('/slideshow?deck=' + encodeURIComponent(name))
+  }
+
+  async function handleLogout() {
+    try {
+      await logout()
+    } catch (_) {}
+    navigate('/auth', { replace: true })
   }
 
   function getUntitledName() {
@@ -137,9 +146,7 @@ export default function DeckListPage() {
   }
 
   function resolveThumb(path) {
-    if (!path) return ''
-    if (path.match(/^https?:\/\//)) return path
-    return window.location.origin + (path.startsWith('/') ? '' : '/') + path
+    return resolveUrl(path)
   }
 
   return (
@@ -165,6 +172,13 @@ export default function DeckListPage() {
             <span id="viewLabel">{MODE_LABELS[viewMode]}</span>
           </button>
           <LanguageSwitch className="deck-lang-switch" />
+          <span className="user-chip" title={t('auth.signedInAs', { name: user?.username || '' })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span className="user-chip-name">{user?.username}</span>
+          </span>
+          <button className="logout-btn" onClick={handleLogout} title={t('auth.logout')}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
       </div>
 

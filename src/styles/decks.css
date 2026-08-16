@@ -701,3 +701,41 @@
     [dir='rtl'] .search-bar input {
       padding: 0.6rem 2.2rem 0.6rem 1rem;
     }
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0.5rem;
+      padding: 0.42rem 0.6rem;
+      color: #a5b4fc;
+      font-size: 0.8rem;
+      font-weight: 500;
+      max-width: 160px;
+      white-space: nowrap;
+      overflow: hidden;
+      line-height: 1;
+    }
+    .user-chip-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .logout-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .logout-btn:hover {
+      background: rgba(239,68,68,0.12);
+      color: #f87171;
+      border-color: rgba(248,113,113,0.4);
+    }
