@@ -10,6 +10,7 @@ import ShapeProps from '../components/ShapeProps'
 import Navigation from '../components/Navigation'
 import SettingsModal from '../components/SettingsModal'
 import PromptDialog from '../components/PromptDialog'
+import UserAvatar from '../components/UserAvatar'
 import { getDefaultShape } from '../utils'
 import { useI18n } from '../i18n'
 import '../styles/slideshow.css'
@@ -948,6 +949,8 @@ function SlideshowEditor() {
           )}
         </div>
       )}
+
+      <UserAvatar className="slideshow-ua" />
 
       <button className="settings-btn" id="settingsBtn" aria-label={t('slideshow.settings')}
         onClick={() => setSettingsVisible(true)}>&#9881;</button>

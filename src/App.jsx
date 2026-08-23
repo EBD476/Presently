@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import AuthPage from './pages/AuthPage'
 import SlideshowPage from './pages/SlideshowPage'
 import DeckListPage from './pages/DeckListPage'
+import AdminPage from './pages/AdminPage'
 import { useI18n } from './i18n'
 
 function ProtectedRoute({ children }) {
@@ -20,6 +21,12 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function AdminRoute({ children }) {
+  const { user } = useAuth()
+  if (!user || user.role !== 'admin') return <Navigate to="/" replace />
+  return children
+}
+
 export default function App() {
   const { t } = useI18n()
   return (
@@ -28,6 +35,7 @@ export default function App() {
         <Routes>
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/" element={<ProtectedRoute><DeckListPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><AdminRoute><AdminPage /></AdminRoute></ProtectedRoute>} />
           <Route path="/slideshow" element={<ProtectedRoute><SlideshowPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

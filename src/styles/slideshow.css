@@ -1005,7 +1005,7 @@
 
     .settings-btn {
       position: absolute;
-      top: 1.25rem;
+      top: 4.25rem;
       right: 1.25rem;
       background-color: #e3e3e3ba;
       /* background: rgba(255, 255, 255, 0.06); */
@@ -1033,7 +1033,7 @@
 
     .fullscreen-btn {
       position: absolute;
-      top: 4rem;
+      top: 7.25rem;
       right: 1.25rem;
       background-color: #e3e3e3ba;
       /* background: rgba(255, 255, 255, 0.06); */
@@ -1785,10 +1785,10 @@
       text-align: center;
     }
     #laserToggleBtn {
-      top: 10rem;
+      top: 13.25rem;
     }
     #drawToggleBtn{
-      top : 7rem;
+      top : 10.25rem;
     }
     
     #drawToggleBtn, #laserToggleBtn {
@@ -1807,7 +1807,7 @@
     }
 
     #presenterBtn {
-      top: 13rem;
+      top: 16.25rem;
     }
 
     #presenterBtn {

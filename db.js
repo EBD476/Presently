@@ -26,7 +26,7 @@ async function init() {
 function createTables() {
   db.run(`
     CREATE TABLE IF NOT EXISTS decks (
-      name TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
       count INTEGER DEFAULT 1,
       urls TEXT DEFAULT '{}',
       resize TEXT DEFAULT '{}',
@@ -37,7 +37,9 @@ function createTables() {
       shapes TEXT DEFAULT '{}',
       starred INTEGER DEFAULT 0,
       lastOpened TEXT,
-      modified TEXT
+      modified TEXT,
+      user_id INTEGER,
+      PRIMARY KEY (name, user_id)
     )
   `);
   db.run(`
@@ -75,6 +77,7 @@ function createTables() {
       username TEXT UNIQUE NOT NULL,
       email TEXT,
       password_hash TEXT NOT NULL,
+      role TEXT DEFAULT 'user',
       created TEXT,
       lastLogin TEXT
     )
@@ -87,7 +90,59 @@ function createTables() {
       expires TEXT
     )
   `);
+  migrateUsersAvatar();
+  migrateUsersRole();
+  migrateDecksUserId();
   save();
+}
+
+function tableColumns(table) {
+  const res = db.exec('PRAGMA table_info(' + table + ')');
+  return ((res[0] && res[0].values) || []).map(row => row[1]);
+}
+
+function migrateUsersAvatar() {
+  if (!tableColumns('users').includes('avatar')) {
+    db.run('ALTER TABLE users ADD COLUMN avatar TEXT');
+  }
+}
+
+function migrateUsersRole() {
+  if (!tableColumns('users').includes('role')) {
+    db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'");
+    db.run("UPDATE users SET role = 'admin' WHERE id = (SELECT MIN(id) FROM users)");
+  }
+}
+
+function migrateDecksUserId() {
+  if (tableColumns('decks').includes('user_id')) return;
+  const firstUser = db.exec('SELECT MIN(id) FROM users');
+  const firstUserId = (firstUser[0] && firstUser[0].values[0] && firstUser[0].values[0][0]) || null;
+  db.run('ALTER TABLE decks RENAME TO decks_old');
+  db.run(`
+    CREATE TABLE decks (
+      name TEXT NOT NULL,
+      count INTEGER DEFAULT 1,
+      urls TEXT DEFAULT '{}',
+      resize TEXT DEFAULT '{}',
+      mode TEXT DEFAULT '{}',
+      names TEXT DEFAULT '{}',
+      bgColors TEXT DEFAULT '{}',
+      notes TEXT DEFAULT '{}',
+      shapes TEXT DEFAULT '{}',
+      starred INTEGER DEFAULT 0,
+      lastOpened TEXT,
+      modified TEXT,
+      user_id INTEGER,
+      PRIMARY KEY (name, user_id)
+    )
+  `);
+  db.run(`
+    INSERT INTO decks (name, count, urls, resize, mode, names, bgColors, notes, shapes, starred, lastOpened, modified, user_id)
+    SELECT name, count, urls, resize, mode, names, bgColors, notes, shapes, starred, lastOpened, modified, ${firstUserId === null ? 'NULL' : Number(firstUserId)}
+    FROM decks_old
+  `);
+  db.run('DROP TABLE decks_old');
 }
 
 function migrateFromJson() {
@@ -101,9 +156,11 @@ function migrateFromJson() {
     if (existingDecks > 0) return;
 
     if (data.decks) {
+      const firstUser = db.exec('SELECT MIN(id) FROM users');
+      const firstUserId = (firstUser[0] && firstUser[0].values[0] && firstUser[0].values[0][0]) || null;
       const insert = db.prepare(`
-        INSERT OR IGNORE INTO decks (name, count, urls, resize, mode, names, bgColors, notes, shapes, starred, lastOpened, modified)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR IGNORE INTO decks (name, count, urls, resize, mode, names, bgColors, notes, shapes, starred, lastOpened, modified, user_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       for (const [name, deck] of Object.entries(data.decks)) {
         insert.run([
@@ -118,7 +175,8 @@ function migrateFromJson() {
           JSON.stringify(deck.shapes || {}),
           deck.starred ? 1 : 0,
           deck.lastOpened || null,
-          deck.modified || null
+          deck.modified || null,
+          firstUserId
         ]);
       }
       insert.free();

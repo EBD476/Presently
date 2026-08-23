@@ -181,6 +181,67 @@ export async function apiMe() {
   return data.user
 }
 
+export async function apiUpdateProfile({ username, email, avatar } = {}) {
+  const resp = await apiFetch('/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify({ username, email, avatar })
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to update profile')
+  return data.user
+}
+
+export async function apiChangePassword(currentPassword, newPassword) {
+  const resp = await apiFetch('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword })
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to change password')
+}
+
+export async function apiAdminListUsers() {
+  const resp = await apiFetch('/admin/users')
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to fetch users')
+  return data.users || []
+}
+
+export async function apiAdminCreateUser({ username, password, email, role }) {
+  const resp = await apiFetch('/admin/users', {
+    method: 'POST',
+    body: JSON.stringify({ username, password, email, role })
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to create user')
+  return data.user
+}
+
+export async function apiAdminUpdateUser(id, { username, email, role } = {}) {
+  const resp = await apiFetch('/admin/users/' + id, {
+    method: 'PATCH',
+    body: JSON.stringify({ username, email, role })
+  })
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to update user')
+  return data.user
+}
+
+export async function apiAdminDeleteUser(id) {
+  const resp = await apiFetch('/admin/users/' + id, { method: 'DELETE' })
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) throw new Error(data.error || 'Failed to delete user')
+}
+
+export async function apiAdminResetPassword(id, newPassword) {
+  const resp = await apiFetch('/admin/users/' + id + '/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ newPassword })
+  })
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) throw new Error(data.error || 'Failed to reset password')
+}
+
 export function getDefaultApiBase() {
   const port = window.location.port || '3002'
   return 'http://localhost:' + port
