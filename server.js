@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require("cors");
 const crypto = require('crypto');
 const db = require('./db');
+const { auditLog } = db;
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
@@ -254,6 +255,7 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
     db.query('INSERT INTO users (username, email, password_hash, role, created, lastLogin) VALUES (?, ?, ?, ?, ?, ?)',
       [name, cleanEmail, hashPassword(password), cleanRole, now, null]);
     const user = db.get('SELECT id, username, email, avatar, role, created, lastLogin FROM users WHERE username = ?', [name]);
+    auditLog(req.user.id, req.user.username, 'create_user', `Created user ${name} (role:${cleanRole})`);
     res.json({ ok: true, user });
   } catch (err) {
     console.error('POST /api/admin/users:', err);
@@ -306,6 +308,7 @@ app.patch('/api/admin/users/:id', requireAdmin, (req, res) => {
 
     db.query('UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?', [newUsername, newEmail, newRole, id]);
     const user = db.get('SELECT id, username, email, avatar, role, created, lastLogin FROM users WHERE id = ?', [id]);
+    auditLog(req.user.id, req.user.username, 'update_user', `Updated user ${newUsername} (id:${id})`);
     res.json({ ok: true, user });
   } catch (err) {
     console.error('PATCH /api/admin/users/:id:', err);
@@ -324,6 +327,7 @@ app.post('/api/admin/users/:id/reset-password', requireAdmin, (req, res) => {
     }
     db.query('UPDATE users SET password_hash = ? WHERE id = ?', [hashPassword(newPassword), id]);
     db.query('DELETE FROM sessions WHERE user_id = ?', [id]);
+    auditLog(req.user.id, req.user.username, 'reset_password', `Reset password for ${target.username} (id:${id})`);
     res.json({ ok: true });
   } catch (err) {
     console.error('POST /api/admin/users/:id/reset-password:', err);
@@ -348,9 +352,111 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
     db.query('DELETE FROM sessions WHERE user_id = ?', [id]);
     db.query('DELETE FROM decks WHERE user_id = ?', [id]);
     db.query('DELETE FROM users WHERE id = ?', [id]);
+    auditLog(req.user.id, req.user.username, 'delete_user', `Deleted user ${target.username} (id:${id})`);
     res.json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/admin/users/:id:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Storage usage per user ────────────────────────────
+app.get('/api/admin/storage', requireAdmin, (req, res) => {
+  try {
+    const users = db.query('SELECT id, username FROM users ORDER BY id');
+    const result = users.map(u => {
+      const deckImages = db.query(`
+        SELECT d.urls FROM decks d WHERE d.user_id = ?
+      `, [u.id]);
+      const imageIds = new Set();
+      for (const d of deckImages) {
+        try {
+          const urls = JSON.parse(d.urls || '{}');
+          for (const v of Object.values(urls)) {
+            if (typeof v === 'string') {
+              const m = v.match(/\/api\/image\/(\d+)/);
+              if (m) imageIds.add(parseInt(m[1]));
+            }
+          }
+        } catch (_) {}
+      }
+      let storageBytes = 0;
+      let imageCount = 0;
+      for (const imgId of imageIds) {
+        const img = db.get('SELECT LENGTH(data) as size FROM images WHERE id = ?', [imgId]);
+        if (img && img.size) {
+          storageBytes += Math.ceil(img.size * 3 / 4);
+          imageCount++;
+        }
+      }
+      const avatar = db.get('SELECT avatar FROM users WHERE id = ?', [u.id]);
+      if (avatar?.avatar?.startsWith('/api/image/')) {
+        const m = avatar.avatar.match(/\/api\/image\/(\d+)/);
+        if (m) {
+          const img = db.get('SELECT LENGTH(data) as size FROM images WHERE id = ?', [parseInt(m[1])]);
+          if (img && img.size) {
+            storageBytes += Math.ceil(img.size * 3 / 4);
+            imageCount++;
+          }
+        }
+      }
+      const deckCount = db.get('SELECT COUNT(*) as c FROM decks WHERE user_id = ?', [u.id]);
+      return { id: u.id, username: u.username, imageCount, storageBytes, deckCount: deckCount?.c || 0 };
+    });
+    const totalImages = db.get('SELECT COUNT(*) as c FROM images');
+    const totalStorage = db.get('SELECT COALESCE(SUM(LENGTH(data)), 0) as s FROM images');
+    res.json({
+      users: result,
+      total: { images: totalImages?.c || 0, storageBytes: Math.ceil((totalStorage?.s || 0) * 3 / 4) }
+    });
+  } catch (err) {
+    console.error('GET /api/admin/storage:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Active sessions management ────────────────────────
+app.get('/api/admin/sessions', requireAdmin, (req, res) => {
+  try {
+    const sessions = db.query(`
+      SELECT s.token, s.user_id, s.created, s.expires, u.username
+      FROM sessions s
+      LEFT JOIN users u ON u.id = s.user_id
+      WHERE s.expires > datetime('now')
+      ORDER BY s.created DESC
+    `);
+    res.json({ sessions: sessions.map(s => ({ ...s, token: s.token.slice(0, 8) + '…' })) });
+  } catch (err) {
+    console.error('GET /api/admin/sessions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/sessions/:token', requireAdmin, (req, res) => {
+  try {
+    const partialToken = req.params.token;
+    const session = db.get('SELECT * FROM sessions WHERE token LIKE ?', [partialToken + '%']);
+    if (!session) return res.status(404).json({ error: 'session_not_found' });
+    db.query('DELETE FROM sessions WHERE token = ?', [session.token]);
+    const target = db.get('SELECT username FROM users WHERE id = ?', [session.user_id]);
+    auditLog(req.user.id, req.user.username, 'revoke_session', `Revoked session of ${target?.username || 'unknown'}`);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/admin/sessions/:token:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Audit log ─────────────────────────────────────────
+app.get('/api/admin/audit-log', requireAdmin, (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const offset = parseInt(req.query.offset) || 0;
+    const rows = db.query('SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?', [limit, offset]);
+    const total = db.get('SELECT COUNT(*) as c FROM audit_log');
+    res.json({ entries: rows, total: total?.c || 0 });
+  } catch (err) {
+    console.error('GET /api/admin/audit-log:', err);
     res.status(500).json({ error: err.message });
   }
 });

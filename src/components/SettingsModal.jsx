@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useSlideshow } from '../context/SlideshowContext'
+import { useTheme } from '../context/ThemeContext'
 import { getDefaultApiBase } from '../api'
 import { useI18n } from '../i18n'
 
 export default function SettingsModal({ visible, onClose }) {
   const { apiBaseUrl, setApiBaseUrl, slides, slideBgColors, deckName, save } = useSlideshow()
   const { t, lang, setLang } = useI18n()
+  const { theme, setTheme } = useTheme()
   const [url, setUrl] = useState(apiBaseUrl || getDefaultApiBase())
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export default function SettingsModal({ visible, onClose }) {
         if (i > 0) pdf.addPage()
         try {
           const canvas = await html2canvas(el, {
-            backgroundColor: slideBgColors[i] || '#1a1a24',
+            backgroundColor: slideBgColors[i] || '#ffffff',
             scale: 2, useCORS: true, logging: false
           })
           const imgData = canvas.toDataURL('image/jpeg', 0.92)
@@ -62,7 +64,7 @@ export default function SettingsModal({ visible, onClose }) {
         el.classList.add('active')
         try {
           const canvas = await html2canvas(el, {
-            backgroundColor: slideBgColors[i] || '#1a1a24',
+            backgroundColor: slideBgColors[i] || '#ffffff',
             scale: 2, useCORS: true, logging: false
           })
           const imgData = canvas.toDataURL('image/png')
@@ -116,6 +118,19 @@ export default function SettingsModal({ visible, onClose }) {
                 onClick={() => setLang('fa')}>{t('lang.fa')}</button>
               <button className={'lang-pick' + (lang === 'en' ? ' active' : '')}
                 onClick={() => setLang('en')}>{t('lang.en')}</button>
+            </div>
+          </div>
+          <div className="slide-setting">
+            <label>{t('settings.theme')}</label>
+            <div className="lang-picker">
+              <button className={'lang-pick' + (theme === 'dark' ? ' active' : '')}
+                onClick={() => setTheme('dark')}>
+                {t('settings.themeDark')}
+              </button>
+              <button className={'lang-pick' + (theme === 'light' ? ' active' : '')}
+                onClick={() => setTheme('light')}>
+                {t('settings.themeLight')}
+              </button>
             </div>
           </div>
           <div className="export-section">

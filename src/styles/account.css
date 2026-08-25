@@ -225,6 +225,33 @@
   cursor: pointer;
 }
 
+.lang-picker {
+  display: flex;
+  gap: 0.4rem;
+}
+.lang-pick {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  color: #a0a0b8;
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  text-align: center;
+}
+.lang-pick.active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+.lang-pick:not(.active):hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+}
+
 .ua-wrap.slideshow-ua {
   position: absolute;
   top: 1.25rem;

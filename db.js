@@ -90,6 +90,16 @@ function createTables() {
       expires TEXT
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      username TEXT,
+      action TEXT NOT NULL,
+      detail TEXT,
+      created TEXT
+    )
+  `);
   migrateUsersAvatar();
   migrateUsersRole();
   migrateDecksUserId();
@@ -240,4 +250,10 @@ function close() {
   }
 }
 
-module.exports = { init, query, get, close, save };
+module.exports = { init, query, get, close, save, auditLog };
+
+function auditLog(userId, username, action, detail) {
+  const now = new Date().toISOString();
+  query('INSERT INTO audit_log (user_id, username, action, detail, created) VALUES (?, ?, ?, ?, ?)',
+    [userId, username, action, detail || null, now]);
+}

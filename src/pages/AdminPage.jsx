@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminDeleteUser, apiAdminResetPassword } from '../api'
+import { apiAdminListUsers, apiAdminCreateUser, apiAdminUpdateUser, apiAdminDeleteUser, apiAdminResetPassword, apiAdminGetStorage, apiAdminListSessions, apiAdminRevokeSession, apiAdminGetAuditLog } from '../api'
 import { timeAgo } from '../utils'
 import { useToast } from '../components/Toast'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -10,10 +10,19 @@ import { useI18n } from '../i18n'
 import '../styles/account.css'
 import '../styles/admin.css'
 
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const units = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + units[i]
+}
+
 export default function AdminPage() {
   const showToast = useToast()
   const { t } = useI18n()
   const { user: me } = useAuth()
+  const [tab, setTab] = useState('users')
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -43,6 +52,13 @@ export default function AdminPage() {
     showToast(msg.startsWith('admin.err.') ? err.message : msg)
   }
 
+  const tabs = [
+    { key: 'users', label: t('admin.tabs.users') },
+    { key: 'storage', label: t('admin.tabs.storage') },
+    { key: 'sessions', label: t('admin.tabs.sessions') },
+    { key: 'audit', label: t('admin.tabs.audit') },
+  ]
+
   return (
     <div className="deck-page">
       <div className="container admin-container">
@@ -56,75 +72,89 @@ export default function AdminPage() {
             <h1>{t('admin.title')}<span>{users.length}</span></h1>
           </div>
           <div className="header-right">
-            <button className="create-header-btn" onClick={() => setCreateOpen(true)}>{t('admin.addUser')}</button>
+            {tab === 'users' && <button className="create-header-btn" onClick={() => setCreateOpen(true)}>{t('admin.addUser')}</button>}
             <UserAvatar />
           </div>
         </div>
 
-        <div className="search-bar">
-          <span className="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-          <input type="text" placeholder={t('admin.searchPlaceholder')} spellCheck="false"
-            value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+        <div className="admin-tabs">
+          {tabs.map(tb => (
+            <button key={tb.key} className={'admin-tab' + (tab === tb.key ? ' active' : '')}
+              onClick={() => setTab(tb.key)}>{tb.label}</button>
+          ))}
         </div>
 
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>{t('admin.user')}</th>
-                <th>{t('admin.role')}</th>
-                <th>{t('admin.decks')}</th>
-                <th>{t('admin.lastLogin')}</th>
-                <th className="admin-col-actions">{t('admin.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i}><td colSpan="5"><div className="skeleton" style={{ height: 32, borderRadius: '0.5rem' }} /></td></tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan="5" className="admin-empty">{searchQuery ? t('admin.emptySearch', { query: searchQuery }) : t('admin.empty')}</td></tr>
-              ) : filtered.map(u => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="admin-user-cell">
-                      <span className={'ua-avatar' + (u.role === 'admin' ? ' ua-admin' : '')}>{(u.username || '?').charAt(0).toUpperCase()}</span>
-                      <div className="admin-user-info">
-                        <span className="admin-user-name">
-                          {u.username}
-                          {me?.id === u.id && <span className="admin-you">({t('admin.you')})</span>}
-                        </span>
-                        <span className="admin-user-email">{u.email || t('account.noEmail')}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td><span className={'admin-role-badge' + (u.role === 'admin' ? ' is-admin' : '')}>{u.role === 'admin' ? t('admin.role.admin') : t('admin.role.user')}</span></td>
-                  <td>{u.deckCount ?? 0}</td>
-                  <td>{u.lastLogin ? timeAgo(u.lastLogin) : t('admin.never')}</td>
-                  <td>
-                    <div className="admin-row-actions">
-                      <button className="admin-action-btn" title={t('common.rename')}
-                        onClick={() => setEditTarget(u)}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                      </button>
-                      <button className="admin-action-btn" title={t('admin.resetPassword')}
-                        onClick={() => setResetTarget(u)}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                      </button>
-                      <button className="admin-action-btn danger" disabled={me?.id === u.id}
-                        title={me?.id === u.id ? t('admin.cannotDeleteSelf') : t('common.delete')}
-                        style={me?.id === u.id ? { opacity: 0.35, cursor: 'default' } : {}}
-                        onClick={() => { if (me?.id !== u.id) setDeleteTarget(u) }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {tab === 'users' && (
+          <>
+            <div className="search-bar">
+              <span className="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+              <input type="text" placeholder={t('admin.searchPlaceholder')} spellCheck="false"
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            </div>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>{t('admin.user')}</th>
+                    <th>{t('admin.role')}</th>
+                    <th>{t('admin.decks')}</th>
+                    <th>{t('admin.lastLogin')}</th>
+                    <th className="admin-col-actions">{t('admin.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <tr key={i}><td colSpan="5"><div className="skeleton" style={{ height: 32, borderRadius: '0.5rem' }} /></td></tr>
+                    ))
+                  ) : filtered.length === 0 ? (
+                    <tr><td colSpan="5" className="admin-empty">{searchQuery ? t('admin.emptySearch', { query: searchQuery }) : t('admin.empty')}</td></tr>
+                  ) : filtered.map(u => (
+                    <tr key={u.id}>
+                      <td>
+                        <div className="admin-user-cell">
+                          <span className={'ua-avatar' + (u.role === 'admin' ? ' ua-admin' : '')}>{(u.username || '?').charAt(0).toUpperCase()}</span>
+                          <div className="admin-user-info">
+                            <span className="admin-user-name">
+                              {u.username}
+                              {me?.id === u.id && <span className="admin-you">({t('admin.you')})</span>}
+                            </span>
+                            <span className="admin-user-email">{u.email || t('account.noEmail')}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className={'admin-role-badge' + (u.role === 'admin' ? ' is-admin' : '')}>{u.role === 'admin' ? t('admin.role.admin') : t('admin.role.user')}</span></td>
+                      <td>{u.deckCount ?? 0}</td>
+                      <td>{u.lastLogin ? timeAgo(u.lastLogin) : t('admin.never')}</td>
+                      <td>
+                        <div className="admin-row-actions">
+                          <button className="admin-action-btn" title={t('common.rename')}
+                            onClick={() => setEditTarget(u)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                          </button>
+                          <button className="admin-action-btn" title={t('admin.resetPassword')}
+                            onClick={() => setResetTarget(u)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          </button>
+                          <button className="admin-action-btn danger" disabled={me?.id === u.id}
+                            title={me?.id === u.id ? t('admin.cannotDeleteSelf') : t('common.delete')}
+                            style={me?.id === u.id ? { opacity: 0.35, cursor: 'default' } : {}}
+                            onClick={() => { if (me?.id !== u.id) setDeleteTarget(u) }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {tab === 'storage' && <StorageTab />}
+        {tab === 'sessions' && <SessionsTab />}
+        {tab === 'audit' && <AuditTab />}
       </div>
 
       {createOpen && (
@@ -163,6 +193,183 @@ export default function AdminPage() {
             loadUsers()
           } catch (err) { handleErr(err) }
         }} />
+    </div>
+  )
+}
+
+function StorageTab() {
+  const { t } = useI18n()
+  const showToast = useToast()
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      try { setData(await apiAdminGetStorage()) }
+      catch (err) { showToast(t('admin.err.' + err.message)) }
+      setLoading(false)
+    })()
+  }, [])
+
+  if (loading) return <div className="admin-loading"><div className="skeleton" style={{ height: 120, borderRadius: '0.5rem' }} /></div>
+  if (!data || !data.users?.length) return <div className="admin-empty">{t('admin.storage.noData')}</div>
+
+  return (
+    <div className="admin-section">
+      <div className="admin-summary-row">
+        <div className="admin-summary-card">
+          <span className="admin-summary-label">{t('admin.storage.total')}</span>
+          <span className="admin-summary-value">{formatBytes(data.total?.storageBytes || 0)}</span>
+        </div>
+        <div className="admin-summary-card">
+          <span className="admin-summary-label">{t('admin.tabs.storage')}</span>
+          <span className="admin-summary-value">{data.total?.images || 0}</span>
+        </div>
+      </div>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t('admin.storage.user')}</th>
+              <th>{t('admin.storage.decks')}</th>
+              <th>{t('admin.storage.images')}</th>
+              <th>{t('admin.storage.size')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.users.map(u => (
+              <tr key={u.id}>
+                <td className="admin-user-name">{u.username}</td>
+                <td>{u.deckCount}</td>
+                <td>{u.imageCount}</td>
+                <td>{formatBytes(u.storageBytes)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function SessionsTab() {
+  const { t } = useI18n()
+  const showToast = useToast()
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try { setSessions(await apiAdminListSessions()) }
+    catch (err) { showToast(t('admin.err.' + err.message)) }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [])
+
+  async function revoke(token) {
+    try {
+      await apiAdminRevokeSession(token)
+      showToast(t('admin.sessions.revoked'), 'success')
+      load()
+    } catch (err) { showToast(err.message) }
+  }
+
+  if (loading) return <div className="admin-loading"><div className="skeleton" style={{ height: 120, borderRadius: '0.5rem' }} /></div>
+  if (!sessions.length) return <div className="admin-empty">{t('admin.sessions.noSessions')}</div>
+
+  return (
+    <div className="admin-section">
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t('admin.sessions.user')}</th>
+              <th>{t('admin.sessions.token')}</th>
+              <th>{t('admin.sessions.created')}</th>
+              <th>{t('admin.sessions.expires')}</th>
+              <th className="admin-col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s, i) => (
+              <tr key={i}>
+                <td className="admin-user-name">{s.username || '—'}</td>
+                <td className="admin-token">{s.token}</td>
+                <td>{timeAgo(s.created)}</td>
+                <td>{timeAgo(s.expires)}</td>
+                <td>
+                  <button className="admin-action-btn danger" title={t('admin.sessions.revoke')}
+                    onClick={() => revoke(s.token)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function AuditTab() {
+  const { t } = useI18n()
+  const showToast = useToast()
+  const [entries, setEntries] = useState([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  const load = useCallback(async (offset = 0) => {
+    if (offset === 0) setLoading(true)
+    else setLoadingMore(true)
+    try {
+      const data = await apiAdminGetAuditLog(50, offset)
+      setEntries(prev => offset === 0 ? data.entries : [...prev, ...data.entries])
+      setTotal(data.total)
+    } catch (err) { showToast(t('admin.err.' + err.message)) }
+    setLoading(false)
+    setLoadingMore(false)
+  }, [])
+
+  useEffect(() => { load() }, [])
+
+  if (loading) return <div className="admin-loading"><div className="skeleton" style={{ height: 120, borderRadius: '0.5rem' }} /></div>
+  if (!entries.length) return <div className="admin-empty">{t('admin.audit.noEntries')}</div>
+
+  return (
+    <div className="admin-section">
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t('admin.audit.time')}</th>
+              <th>{t('admin.audit.user')}</th>
+              <th>{t('admin.audit.action')}</th>
+              <th>{t('admin.audit.detail')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map(e => (
+              <tr key={e.id}>
+                <td className="admin-audit-time">{timeAgo(e.created)}</td>
+                <td className="admin-user-name">{e.username || '—'}</td>
+                <td><span className="admin-audit-badge">{e.action}</span></td>
+                <td className="admin-audit-detail">{e.detail}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {entries.length < total && (
+        <div className="admin-load-more">
+          <button className="admin-load-more-btn" onClick={() => load(entries.length)}
+            disabled={loadingMore}>
+            {loadingMore ? t('common.loading') : t('admin.audit.loadMore')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

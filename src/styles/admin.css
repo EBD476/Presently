@@ -178,3 +178,122 @@
     border-radius: 0.75rem;
   }
 }
+
+/* ── admin tabs ──────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 0;
+}
+.admin-tab {
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.admin-tab:hover { color: #a5b4fc; }
+.admin-tab.active {
+  color: #818cf8;
+  border-bottom-color: #6366f1;
+}
+
+/* ── summary cards ───────────────────────────────────── */
+.admin-summary-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.admin-summary-card {
+  flex: 1;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.admin-summary-label {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.admin-summary-value {
+  color: #f1f5f9;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* ── section helper ──────────────────────────────────── */
+.admin-section { margin-top: 0; }
+.admin-loading {
+  padding: 1.5rem 0;
+}
+
+/* ── token / audit cells ─────────────────────────────── */
+.admin-token {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+.admin-audit-time {
+  white-space: nowrap;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+.admin-audit-badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(99,102,241,0.14);
+  color: #a5b4fc;
+  white-space: nowrap;
+}
+.admin-audit-detail {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── load more ───────────────────────────────────────── */
+.admin-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 0.5rem;
+}
+.admin-load-more-btn {
+  padding: 0.45rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.admin-load-more-btn:hover {
+  background: rgba(99,102,241,0.12);
+  color: #a5b4fc;
+}
+.admin-load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

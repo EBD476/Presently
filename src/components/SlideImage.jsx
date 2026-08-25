@@ -24,7 +24,7 @@ export default function SlideImage({ slideIndex }) {
   }, [slideIndex, setSlideMode, save])
 
   const handleBgChange = useCallback((color) => {
-    if (color && color !== '#1a1a24') {
+    if (color && color !== '#ffffff') {
       setSlideBgColors(prev => ({ ...prev, [slideIndex]: color }))
     } else {
       setSlideBgColors(prev => { const n = { ...prev }; delete n[slideIndex]; return n })
@@ -186,7 +186,7 @@ export default function SlideImage({ slideIndex }) {
             onClick={() => handleModeChange(m)}>{t('slideImage.' + m)}</button>
         ))}
         <div className="bg-color-wrap">
-          <input type="color" className="bg-color-input" value={bgColor || '#1a1a24'}
+          <input type="color" className="bg-color-input" value={bgColor || '#ffffff'}
             title={t('slideImage.background')}
             onChange={e => handleBgChange(e.target.value)} />
         </div>

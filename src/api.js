@@ -242,6 +242,36 @@ export async function apiAdminResetPassword(id, newPassword) {
   if (!resp.ok) throw new Error(data.error || 'Failed to reset password')
 }
 
+export async function apiAdminGetStorage() {
+  const resp = await apiFetch('/admin/storage')
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to fetch storage')
+  return data
+}
+
+export async function apiAdminListSessions() {
+  const resp = await apiFetch('/admin/sessions')
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to fetch sessions')
+  return data.sessions || []
+}
+
+export async function apiAdminRevokeSession(token) {
+  const resp = await apiFetch('/admin/sessions/' + encodeURIComponent(token), { method: 'DELETE' })
+  const data = await resp.json().catch(() => ({}))
+  if (!resp.ok) throw new Error(data.error || 'Failed to revoke session')
+}
+
+export async function apiAdminGetAuditLog(limit, offset) {
+  const params = new URLSearchParams()
+  if (limit) params.set('limit', limit)
+  if (offset) params.set('offset', offset)
+  const resp = await apiFetch('/admin/audit-log' + (params.toString() ? '?' + params : ''))
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(data.error || 'Failed to fetch audit log')
+  return data
+}
+
 export function getDefaultApiBase() {
   const port = window.location.port || '3002'
   return 'http://localhost:' + port

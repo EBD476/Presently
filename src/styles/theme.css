@@ -1,0 +1,413 @@
+:root {
+  --bg-primary: #1a1a24;
+  --bg-surface: #23232f;
+  --bg-overlay: rgba(255,255,255,0.06);
+  --bg-hover: rgba(255,255,255,0.08);
+  --bg-input: rgba(255,255,255,0.05);
+  --border-main: rgba(255,255,255,0.08);
+  --border-subtle: rgba(255,255,255,0.04);
+  --border-focus: #6366f1;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #6b7280;
+  --text-link: #a5b4fc;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --shadow-modal: rgba(0,0,0,0.5);
+  --ring: rgba(99,102,241,0.25);
+  --danger: #f87171;
+  --danger-bg: rgba(239,68,68,0.12);
+  --header-color: #f1f5f9;
+  --skel-bg: rgba(255,255,255,0.04);
+  --bg-slide: #ffffff;
+  --slide-fallback: rgba(0,0,0,0.15);
+  --slide-fallback-num: #374151;
+  --slide-thumb-placeholder: #9ca3af;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-overlay: rgba(0,0,0,0.05);
+  --bg-hover: rgba(0,0,0,0.06);
+  --bg-input: rgba(0,0,0,0.04);
+  --border-main: rgba(0,0,0,0.1);
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-focus: #6366f1;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-link: #6366f1;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --shadow-modal: rgba(0,0,0,0.25);
+  --ring: rgba(99,102,241,0.2);
+  --danger: #dc2626;
+  --danger-bg: rgba(220,38,38,0.1);
+  --header-color: #0f172a;
+  --skel-bg: rgba(0,0,0,0.05);
+  --bg-slide: #ffffff;
+  --slide-fallback: rgba(0,0,0,0.1);
+  --slide-fallback-num: #1e293b;
+  --slide-thumb-placeholder: #94a3b8;
+}
+
+/* ── global structural overrides ──────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body, html, #root {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Poppins', -apple-system, sans-serif;
+  transition: background 0.25s, color 0.25s;
+}
+
+/* ── deck list page ──────────────────────────────────── */
+.deck-page {
+  background: var(--bg-primary) !important;
+}
+
+.container {
+  background: transparent;
+}
+
+.header h1 { color: var(--header-color) !important; }
+.header h1 span { color: var(--text-muted) !important; }
+
+.sort-select {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.view-toggle {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-muted) !important;
+}
+.view-toggle:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: rgba(255,255,255,0.15);
+}
+[data-theme="light"] .view-toggle:hover { border-color: rgba(0,0,0,0.18); }
+
+.create-header-btn {
+  background: linear-gradient(135deg, var(--accent), #8b5cf6) !important;
+  color: #fff !important;
+}
+
+.search-bar input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+.search-bar input::placeholder { color: var(--text-muted) !important; }
+.search-bar .search-icon { color: var(--text-muted) !important; }
+
+.deck-card {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-main) !important;
+}
+.deck-card:hover { border-color: var(--border-focus) !important; }
+.deck-card .info .name { color: var(--text-primary) !important; }
+.deck-card .info .count,
+.deck-card .info .time { color: var(--text-secondary) !important; }
+
+.empty {
+  color: var(--text-secondary) !important;
+}
+
+.pagination .page-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.pagination .page-info { color: var(--text-muted) !important; }
+
+.new-deck input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── confirm / modal ─────────────────────────────────── */
+.confirm-overlay {
+  background: rgba(0,0,0,0.5) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+[data-theme="light"] .confirm-overlay {
+  background: rgba(0,0,0,0.35) !important;
+}
+
+.confirm-box {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+}
+.confirm-box p { color: var(--text-primary) !important; }
+
+.modal-overlay {
+  background: rgba(0,0,0,0.5) !important;
+}
+[data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.3) !important; }
+
+.modal {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+  box-shadow: 0 40px 80px var(--shadow-modal) !important;
+}
+.modal-header {
+  border-color: var(--border-subtle) !important;
+}
+.modal-header h2 { color: var(--text-primary) !important; }
+.modal-body { color: var(--text-primary) !important; }
+
+.prompt-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+.prompt-input:focus { border-color: var(--border-focus) !important; }
+
+.confirm-actions .btn-cancel {
+  background: var(--bg-overlay) !important;
+  color: var(--text-secondary) !important;
+}
+.confirm-actions .btn-cancel:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* ── slide settings ──────────────────────────────────── */
+.slide-setting { border-color: var(--border-subtle) !important; }
+.slide-setting label { color: var(--text-secondary) !important; }
+.slide-setting input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+.slide-setting input:focus { border-color: var(--border-focus) !important; }
+
+.lang-picker .lang-pick {
+  background: var(--bg-overlay) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.lang-picker .lang-pick.active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+.export-btn {
+  background: var(--bg-overlay) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.export-btn:hover { background: var(--bg-hover) !important; }
+
+/* ── user avatar menu ────────────────────────────────── */
+.ua-menu {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+  box-shadow: 0 20px 50px var(--shadow-modal) !important;
+}
+.ua-divider { background: var(--border-subtle) !important; }
+.ua-menu-name { color: var(--header-color) !important; }
+.ua-menu-email { color: var(--text-secondary) !important; }
+.ua-menu-item { color: var(--text-secondary) !important; }
+.ua-menu-item:hover { background: rgba(99,102,241,0.15) !important; color: var(--text-primary) !important; }
+.ua-menu-item.ua-danger { color: var(--danger) !important; }
+.ua-menu-item.ua-danger:hover { background: var(--danger-bg) !important; }
+
+/* ── account modals ──────────────────────────────────── */
+.account-modal { background: var(--bg-surface) !important; }
+.account-label { color: var(--text-secondary) !important; }
+.account-btn-secondary {
+  background: rgba(99,102,241,0.18) !important;
+  color: var(--text-link) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+}
+.account-btn-secondary:hover { background: rgba(99,102,241,0.3) !important; }
+
+/* ── admin page ──────────────────────────────────────── */
+.admin-table-wrap {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+.admin-table th { color: var(--text-secondary) !important; border-color: var(--border-subtle) !important; }
+.admin-table td { color: var(--text-secondary) !important; border-color: var(--border-subtle) !important; }
+.admin-table tbody tr:hover { background: var(--bg-hover) !important; }
+.admin-empty { color: var(--text-muted) !important; }
+.admin-action-btn {
+  background: transparent;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.admin-action-btn:hover { background: rgba(99,102,241,0.15) !important; color: var(--text-link) !important; }
+.admin-role-badge { background: var(--bg-overlay) !important; color: var(--text-secondary) !important; }
+.admin-user-email { color: var(--text-secondary) !important; }
+.admin-you { color: var(--text-muted) !important; }
+.admin-user-name { color: var(--text-primary) !important; }
+.admin-tabs { border-color: var(--border-subtle) !important; }
+.admin-tab { color: var(--text-muted) !important; }
+.admin-tab:hover { color: var(--text-link) !important; }
+.admin-tab.active { color: var(--text-link) !important; border-bottom-color: var(--accent) !important; }
+.admin-summary-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-main) !important;
+}
+.admin-summary-label { color: var(--text-muted) !important; }
+.admin-summary-value { color: var(--text-primary) !important; }
+.admin-token { color: var(--text-secondary) !important; }
+.admin-audit-time { color: var(--text-muted) !important; }
+.admin-audit-badge { background: rgba(99,102,241,0.14) !important; color: var(--text-link) !important; }
+.admin-audit-detail { color: var(--text-secondary) !important; }
+.admin-load-more-btn {
+  background: var(--bg-overlay) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.admin-load-more-btn:hover {
+  background: rgba(99,102,241,0.12) !important;
+  color: var(--text-link) !important;
+}
+.admin-action-btn.danger:hover {
+  background: var(--danger-bg) !important;
+  color: var(--danger) !important;
+}
+
+.account-select {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── auth page ───────────────────────────────────────── */
+.auth-card {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+}
+.auth-card label { color: var(--text-secondary) !important; }
+.auth-card input {
+  background: var(--bg-input) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+}
+.auth-card input:focus { border-color: var(--border-focus) !important; }
+.auth-toggle { color: var(--text-muted) !important; }
+.auth-link { color: var(--text-link) !important; }
+.auth-submit { background: linear-gradient(135deg, var(--accent), #8b5cf6) !important; color: #fff !important; }
+
+/* ── toast ────────────────────────────────────────────── */
+.toast {
+  background: var(--bg-surface) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 10px 30px var(--shadow-modal) !important;
+}
+
+/* ── skeleton loaders ────────────────────────────────── */
+.skeleton { background: var(--skel-bg) !important; }
+.skeleton-card { background: var(--bg-surface) !important; border-color: var(--border-main) !important; }
+
+/* ── slideshow page core ─────────────────────────────── */
+.slideshow-page { background: var(--bg-primary) !important; }
+.sidebar { background: var(--bg-surface) !important; }
+.sidebar-header h3 { color: var(--text-primary) !important; }
+.sidebar-header #slideCount { color: var(--text-secondary) !important; }
+.sidebar-add-btn { color: var(--text-secondary) !important; background: var(--bg-overlay) !important; }
+.sidebar-add-btn:hover { background: var(--bg-hover) !important; }
+.thumb-label { color: var(--text-primary) !important; }
+.thumb-desc { color: var(--text-secondary) !important; }
+
+.settings-btn, .fullscreen-btn {
+  background: var(--bg-overlay) !important;
+  border-color: var(--border-main) !important;
+  color: var(--text-secondary) !important;
+}
+.settings-btn:hover, .fullscreen-btn:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .settings-btn,
+[data-theme="light"] .fullscreen-btn { background: rgba(0,0,0,0.06) !important; color: #475569 !important; }
+[data-theme="light"] .settings-btn:hover,
+[data-theme="light"] .fullscreen-btn:hover { background: rgba(0,0,0,0.1) !important; color: #1e293b !important; }
+
+.right-sidebar { background: var(--bg-surface) !important; }
+.right-sidebar-header { border-color: var(--border-subtle) !important; color: var(--text-primary) !important; }
+.right-sidebar-section-title { color: var(--text-secondary) !important; }
+.rhs-preset-item { color: var(--text-secondary) !important; }
+.rhs-preset-item:hover { background: var(--bg-hover) !important; }
+.rhs-library-name { color: var(--text-primary) !important; }
+.rhs-library-type { color: var(--text-secondary) !important; }
+
+/* ── settings toggle in avatar menu ──────────────────── */
+.ua-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-family: inherit;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  text-align: start;
+  transition: background 0.15s, color 0.15s;
+}
+.ua-theme-toggle:hover {
+  background: rgba(99,102,241,0.15);
+  color: var(--text-primary);
+}
+
+.ua-toggle-track {
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-main);
+  position: relative;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.ua-toggle-track.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ua-toggle-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  transition: transform 0.2s;
+}
+.ua-toggle-track.on .ua-toggle-thumb {
+  transform: translateX(14px);
+}
+
+/* ── modal-footer helper ─────────────────────────────── */
+.modal-footer { border-color: var(--border-subtle) !important; }
+.modal-footer .btn-cancel { background: var(--bg-overlay) !important; color: var(--text-secondary) !important; }
+.modal-footer .btn-cancel:hover { background: var(--bg-hover) !important; }
+
+/* ── slide background (always light) ─────────────────── */
+.slide { background-color: var(--bg-slide) !important; }
+
+.fallback-msg { color: var(--slide-fallback) !important; }
+.fallback-box .fb-num { color: var(--slide-fallback-num) !important; }
+.fallback-box .fb-label { color: var(--slide-fallback-num) !important; }
+
+.thumb-placeholder { color: var(--slide-thumb-placeholder) !important; }
+
+.thumb-preview {
+  background-color: var(--bg-slide) !important;
+}
