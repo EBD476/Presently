@@ -122,6 +122,7 @@
       font-family: inherit;
       cursor: pointer;
       outline: none;
+      height: 2rem;
       transition: border-color 0.2s, color 0.2s;
     }
     .sort-select:hover {

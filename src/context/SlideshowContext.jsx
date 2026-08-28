@@ -19,6 +19,7 @@ export function SlideshowProvider({ children }) {
   const [slideBgColors, setSlideBgColors] = useState({})
   const [slideNotes, setSlideNotes] = useState({})
   const [slideShapes, setSlideShapes] = useState({})
+  const [masterShapes, setMasterShapes] = useState([])
   const [loading, setLoading] = useState(true)
   const [drawData, setDrawData] = useState({})
   const [apiBaseUrl, setApiBaseUrl] = useState(getDefaultApiBase())
@@ -48,6 +49,7 @@ export function SlideshowProvider({ children }) {
       setSlideBgColors(kv.bgColors || {})
       setSlideNotes(kv.notes || {})
       setSlideShapes(kv.shapes || {})
+      setMasterShapes(kv.masterShapes || [])
       setCurrent(0)
       if (kv.apiUrl) setApiBaseUrl(kv.apiUrl)
     } catch (e) {
@@ -65,8 +67,9 @@ export function SlideshowProvider({ children }) {
     bgColors: { ...slideBgColors },
     notes: { ...slideNotes },
     shapes: { ...slideShapes },
+    masterShapes: [...masterShapes],
     apiUrl: apiBaseUrl
-  }), [slideUrls, resizeData, slideMode, slideNames, slideBgColors, slideNotes, slideShapes, apiBaseUrl])
+  }), [slideUrls, resizeData, slideMode, slideNames, slideBgColors, slideNotes, slideShapes, masterShapes, apiBaseUrl])
 
   const save = useCallback(async () => {
     const kv = buildKv()
@@ -187,7 +190,7 @@ export function SlideshowProvider({ children }) {
     slideUrls, setSlideUrls, resizeData, setResizeData,
     slideMode, setSlideMode, slideNames, setSlideNames,
     slideBgColors, setSlideBgColors, slideNotes, setSlideNotes,
-    slideShapes, setSlideShapes, loading, drawData, setDrawData,
+    slideShapes, setSlideShapes, masterShapes, setMasterShapes, loading, drawData, setDrawData,
     apiBaseUrl, setApiBaseUrl, expandedSlide, setExpandedSlide,
     shapeLibrary, setShapeLibrary, slideTemplates, setSlideTemplates,
     loadDeck, save, goTo, next, prev, addSlide, removeSlide,

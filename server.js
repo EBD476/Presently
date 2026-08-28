@@ -522,6 +522,7 @@ app.get('/api/data/:deckName', (req, res) => {
         bgColors: JSON.parse(deck.bgColors || '{}'),
         notes: JSON.parse(deck.notes || '{}'),
         shapes: JSON.parse(deck.shapes || '{}'),
+        masterShapes: JSON.parse(deck.masterShapes || '[]'),
         starred: !!deck.starred,
         lastOpened: deck.lastOpened,
         modified: deck.modified,
@@ -547,8 +548,8 @@ app.post('/api/data/:deckName', (req, res) => {
 
     const now = new Date().toISOString();
     db.query(`
-      INSERT INTO decks (name, count, urls, resize, mode, names, bgColors, notes, shapes, lastOpened, modified, user_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO decks (name, count, urls, resize, mode, names, bgColors, notes, shapes, masterShapes, lastOpened, modified, user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(name, user_id) DO UPDATE SET
         count = excluded.count,
         urls = excluded.urls,
@@ -558,6 +559,7 @@ app.post('/api/data/:deckName', (req, res) => {
         bgColors = excluded.bgColors,
         notes = excluded.notes,
         shapes = excluded.shapes,
+        masterShapes = excluded.masterShapes,
         modified = excluded.modified
     `, [
       name,
@@ -569,6 +571,7 @@ app.post('/api/data/:deckName', (req, res) => {
       JSON.stringify(kv.bgColors || {}),
       JSON.stringify(kv.notes || {}),
       JSON.stringify(kv.shapes || {}),
+      JSON.stringify(kv.masterShapes || []),
       now,
       now,
       req.user.id

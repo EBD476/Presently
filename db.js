@@ -103,6 +103,7 @@ function createTables() {
   migrateUsersAvatar();
   migrateUsersRole();
   migrateDecksUserId();
+  migrateDecksMasterShapes();
   save();
 }
 
@@ -153,6 +154,11 @@ function migrateDecksUserId() {
     FROM decks_old
   `);
   db.run('DROP TABLE decks_old');
+}
+
+function migrateDecksMasterShapes() {
+  if (tableColumns('decks').includes('masterShapes')) return;
+  db.run("ALTER TABLE decks ADD COLUMN masterShapes TEXT DEFAULT '[]'");
 }
 
 function migrateFromJson() {

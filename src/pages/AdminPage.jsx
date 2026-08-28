@@ -69,7 +69,9 @@ export default function AdminPage() {
                 <rect x="3" y="3" width="18" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
               </svg>
             </Link>
-            <h1>{t('admin.title')}<span>{users.length}</span></h1>
+            <h1>{t('admin.title')}
+            {/* <span>{users.length}</span> */}
+            </h1>
           </div>
           <div className="header-right">
             {tab === 'users' && <button className="create-header-btn" onClick={() => setCreateOpen(true)}>{t('admin.addUser')}</button>}

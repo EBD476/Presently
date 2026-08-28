@@ -70,7 +70,7 @@ const en = {
   'account.err.username_chars': 'Username may only contain letters, numbers, dots, dashes and underscores',
   'account.err.username_taken': 'Username already taken',
 
-  'admin.title': 'Manage Users',
+  'admin.title': 'Management Panel',
   'admin.addUser': '+ Add User',
   'admin.searchPlaceholder': 'Search users...',
   'admin.user': 'User',
@@ -394,7 +394,7 @@ const fa = {
   'account.err.username_chars': 'نام کاربری فقط می‌تواند شامل حروف، اعداد، نقطه، خط تیره و زیرخط باشد',
   'account.err.username_taken': 'این نام کاربری قبلاً ثبت شده است',
 
-  'admin.title': 'مدیریت کاربران',
+  'admin.title': 'پنل مدیریت',
   'admin.addUser': '+ کاربر جدید',
   'admin.searchPlaceholder': 'جستجوی کاربران...',
   'admin.user': 'کاربر',

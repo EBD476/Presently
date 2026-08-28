@@ -1007,7 +1007,7 @@
       position: absolute;
       top: 4.25rem;
       right: 1.25rem;
-      background-color: #e3e3e3ba;
+      background-color: #e3e3e3;
       /* background: rgba(255, 255, 255, 0.06); */
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #707081;
@@ -1021,8 +1021,8 @@
       font-size: 1.125rem;
       transition: background 0.25s, border-color 0.25s, color 0.25s;
       z-index: 200;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      /* backdrop-filter: blur(8px); */
+      /* -webkit-backdrop-filter: blur(8px); */
     }
 
     .settings-btn:hover {
@@ -1035,7 +1035,7 @@
       position: absolute;
       top: 7.25rem;
       right: 1.25rem;
-      background-color: #e3e3e3ba;
+      background-color: #e3e3e3;
       /* background: rgba(255, 255, 255, 0.06); */
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #707081;
@@ -1049,8 +1049,8 @@
       font-size: 1rem;
       transition: background 0.25s, border-color 0.25s, color 0.25s;
       z-index: 200;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      /* backdrop-filter: blur(8px); */
+      /* -webkit-backdrop-filter: blur(8px); */
     }
 
     .fullscreen-btn:hover {
@@ -1063,6 +1063,7 @@
     [dir='rtl'] .fullscreen-btn {
       right: auto;
       left: 1.25rem;
+      z-index: 0;
     }
 
     .fallback-msg {
